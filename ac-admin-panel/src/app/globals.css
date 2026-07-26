@@ -1,0 +1,149 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #0F766E;
+    --primary-light: #14B8A6;
+    --accent: #F97316;
+    --bg: #F8FAFC;
+    --card: #FFFFFF;
+    --text: #0F172A;
+    --text-secondary: #64748B;
+    --border: #E2E8F0;
+    --sidebar-width: 260px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #F8FAFC;
+    color: #0F172A;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #F1F5F9;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+  }
+}
+
+@layer components {
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-500 hover:text-primary-700 hover:bg-primary-50 transition-all duration-200 text-sm font-medium cursor-pointer;
+  }
+  .sidebar-link.active {
+    @apply bg-primary-700 text-white shadow-md;
+  }
+  .sidebar-link.active svg {
+    @apply text-white;
+  }
+
+  .stat-card {
+    @apply bg-white rounded-2xl p-5 border border-slate-100 shadow-card hover:shadow-card-hover transition-all duration-300;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 bg-primary-700 hover:bg-primary-800 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold px-5 py-2.5 rounded-xl border border-slate-200 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 active:scale-95;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-600;
+  }
+  .badge-upcoming  { @apply bg-teal-50 text-teal-700; }
+  .badge-completed { @apply bg-green-50 text-green-700; }
+  .badge-cancelled { @apply bg-red-50 text-red-600; }
+  .badge-pending   { @apply bg-amber-50 text-amber-700; }
+  .badge-active    { @apply bg-emerald-50 text-emerald-700; }
+  .badge-inactive  { @apply bg-slate-100 text-slate-500; }
+
+  .page-header {
+    @apply mb-6 flex items-center justify-between;
+  }
+
+  .page-title {
+    @apply text-2xl font-800 text-slate-900;
+  }
+
+  .page-subtitle {
+    @apply text-sm text-slate-500 mt-0.5;
+  }
+
+  .section-card {
+    @apply bg-white rounded-2xl border border-slate-100 shadow-card overflow-hidden;
+  }
+
+  .table-header {
+    @apply text-xs font-700 text-slate-500 uppercase tracking-wider px-5 py-3.5 bg-slate-50 border-b border-slate-100;
+  }
+
+  .table-cell {
+    @apply px-5 py-4 text-sm text-slate-700;
+  }
+
+  .table-row {
+    @apply border-b border-slate-50 hover:bg-slate-50/70 transition-colors duration-150;
+  }
+
+  .avatar {
+    @apply rounded-full object-cover ring-2 ring-white;
+  }
+}
+
+@layer utilities {
+  .font-800 { font-weight: 800; }
+  .font-700 { font-weight: 700; }
+  .font-600 { font-weight: 600; }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-700 to-primary-500 bg-clip-text text-transparent;
+  }
+
+  .animate-fade-in { animation: fadeIn 0.35s ease-in-out both; }
+  .animate-slide-up { animation: slideUp 0.4s ease-out both; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}

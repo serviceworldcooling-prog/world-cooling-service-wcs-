@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "AC Service Center",
+    "slug": "ac-service-center",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8FAFC"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F8FAFC"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow AC Service to use your location so technicians can navigate directly to you.",
+          "locationWhenInUsePermission": "Allow AC Service to access your location to auto-fill your service address."
+        }
+      ]
+    ],
+    "scheme": "acservice"
+  }
+}
