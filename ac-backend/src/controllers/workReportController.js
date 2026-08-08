@@ -11,7 +11,19 @@ const { sendSuccess, sendError } = require('../utils/responseUtils');
 // After submission: auto-generates endOtp (customer verifies it)
 // ─────────────────────────────────────────────────────────────────────────────
 const submitWorkReport = asyncWrapper(async (req, res) => {
-  const { bookingId, workDone, selectedWorks, techNote, photos } = req.body;
+  const { 
+    bookingId, 
+    workDone, 
+    selectedWorks, 
+    techNote, 
+    photos, 
+    video,
+    warrantyActive,
+    warrantyPeriod,
+    warrantyDetails,
+    extraMaterialCharges = 0,
+    extraAmountTaken = 0
+  } = req.body;
 
   if (!bookingId || !workDone) {
     return sendError(res, 400, 'bookingId and workDone are required');
@@ -35,7 +47,28 @@ const submitWorkReport = asyncWrapper(async (req, res) => {
     return sendError(res, 409, 'Work report already submitted for this booking');
   }
 
-  // Create report
+  // Calculate new total price
+  const basePrice = (booking.finalPrice && booking.finalPrice > 0) ? booking.finalPrice : (booking.price || 0);
+  const extraCharges = Number(extraMaterialCharges) || 0;
+  const extraTaken = Number(extraAmountTaken) || 0;
+  const finalUpdatedPrice = basePrice + extraCharges + extraTaken;
+
+  // Save changes to booking
+  booking.extraMaterialCharges = extraCharges;
+  booking.extraAmountTaken = extraTaken;
+  booking.finalPrice = finalUpdatedPrice;
+
+  if (warrantyActive) {
+    booking.warrantyStatus = 'Active';
+    booking.warrantyPeriod = warrantyPeriod || '3 Months';
+    booking.warrantyDetails = warrantyDetails || 'Warranty on replaced parts / cooling service.';
+  } else {
+    booking.warrantyStatus = 'None';
+  }
+  await booking.save();
+
+  // Create report (not yet OTP verified)
+  const { acNo, modelNo, warrantyReason } = req.body;
   const report = await WorkReport.create({
     bookingId,
     technicianId: req.user._id,
@@ -44,16 +77,16 @@ const submitWorkReport = asyncWrapper(async (req, res) => {
     selectedWorks: selectedWorks || [],
     techNote: techNote || '',
     photos: photos || [],
-  });
-
-  // Attach report reference to booking
-  await Booking.findByIdAndUpdate(bookingId, {
-    workReport: {
-      submittedAt: new Date().toLocaleString(),
-      workDone,
-      photos: photos || [],
-      techNote: techNote || '',
-    },
+    video: video || '',
+    warrantyActive: !!warrantyActive,
+    warrantyPeriod: warrantyPeriod || '',
+    warrantyDetails: warrantyDetails || '',
+    acNo: acNo || '',
+    modelNo: modelNo || '',
+    warrantyReason: warrantyReason || '',
+    extraMaterialCharges: extraCharges,
+    extraAmountTaken: extraTaken,
+    otpVerified: false,
   });
 
   // Auto-generate end OTP for customer verification
@@ -80,11 +113,43 @@ const submitWorkReport = asyncWrapper(async (req, res) => {
     await otpRecord.save();
   }
 
-  return sendSuccess(res, 201, 'Work report submitted. Show the OTP to customer.', {
+  // Create in-app notifications
+  const Notification = require('../models/Notification');
+  
+  // 1. Notify Customer
+  let customerMsg = `Your service is complete. Total Amount: ₹${finalUpdatedPrice} (Base: ₹${basePrice}`;
+  if (extraCharges > 0) customerMsg += `, Extra Material: ₹${extraCharges}`;
+  if (extraTaken > 0) customerMsg += `, Extra Labor/Other: ₹${extraTaken}`;
+  customerMsg += `).`;
+  if (warrantyActive) {
+    customerMsg += ` Warranty Card of ${warrantyPeriod} issued!`;
+  }
+  customerMsg += ` Share OTP: ${endOtp} with technician to confirm.`;
+
+  await Notification.create({
+    user: booking.customerId,
+    title: 'Service Completed & Invoice Updated',
+    message: customerMsg,
+    type: 'booking',
+    refId: bookingId.toString(),
+  });
+
+  // 2. Notify Admin
+  const admins = await User.find({ role: 'admin' });
+  for (const admin of admins) {
+    await Notification.create({
+      user: admin._id,
+      title: `Job Completed - Invoice Updated (BKG #${booking.bookingId})`,
+      message: `Technician ${req.user.name} completed service. Updated Total: ₹${finalUpdatedPrice} (Base: ₹${basePrice}, Extra Material: ₹${extraCharges}, Extra Amount: ₹${extraTaken}).`,
+      type: 'booking',
+      refId: bookingId.toString(),
+    });
+  }
+
+  return sendSuccess(res, 201, 'Work report initiated. Ask customer for completion OTP.', {
     report,
-    endOtp,       // Technician shows this to customer
     expiresAt,
-    message: `Show OTP ${endOtp} to customer ${booking.customerId} to confirm service completion`,
+    message: `An OTP has been sent to customer. Ask them for the OTP to complete submission.`,
   });
 });
 
@@ -130,14 +195,21 @@ const getMyReports = asyncWrapper(async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const getAllReports = asyncWrapper(async (req, res) => {
   const { adminReviewed, page = 1, limit = 20 } = req.query;
-  const filter = {};
+  const filter = { otpVerified: true };
   if (adminReviewed !== undefined) filter.adminReviewed = adminReviewed === 'true';
 
   const total   = await WorkReport.countDocuments(filter);
   const reports = await WorkReport.find(filter)
     .populate('technicianId', 'name avatar phone specialty')
     .populate('customerId',   'name phone avatar')
-    .populate('bookingId',    'serviceType preferredDate preferredTime address status bookingId invoiceId')
+    .populate({
+      path: 'bookingId',
+      select: 'bookingId serviceType preferredDate preferredTime address status invoiceId price finalPrice customerId technicianId',
+      populate: [
+        { path: 'customerId', select: 'name phone avatar' },
+        { path: 'technicianId', select: 'name phone avatar specialty' }
+      ]
+    })
     .sort({ submittedAt: -1 })
     .skip((page - 1) * limit)
     .limit(Number(limit));

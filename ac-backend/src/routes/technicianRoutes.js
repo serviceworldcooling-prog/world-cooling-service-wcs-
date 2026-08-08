@@ -18,6 +18,7 @@ router.get('/jobs/:bookingId',            ctrl.getJobById);
 // Per-job actions
 router.put('/jobs/:bookingId/accept',     ctrl.acceptJob);
 router.put('/jobs/:bookingId/start',      ctrl.startJob);
+router.put('/jobs/:bookingId/share-location', ctrl.shareLocation);
 
 // Earnings
 router.get('/earnings', ctrl.getMyEarnings);

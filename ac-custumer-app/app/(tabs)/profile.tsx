@@ -4,11 +4,19 @@ import { useRouter } from 'expo-router';
 import { useAppStore } from '../../store/useAppStore';
 import { Colors } from '../../theme/colors';
 import * as Icons from 'lucide-react-native';
+import { BASE_URL } from '../../api/client';
 
 export default function ProfileScreen() {
-  const { themeMode, user, logout } = useAppStore();
+  const { themeMode, user, logout, userLocation } = useAppStore();
   const colors = themeMode === 'dark' ? Colors.dark : Colors.light;
   const router = useRouter();
+
+  const getAvatarUrl = (avatar: string) => {
+    if (!avatar) return '';
+    if (avatar.startsWith('http') || avatar.startsWith('data:image')) return avatar;
+    const origin = BASE_URL.replace('/api/v1', '');
+    return `${origin}${avatar}`;
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -39,13 +47,27 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* User Card */}
         <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Image source={{ uri: user?.avatar }} style={styles.avatar} />
+          {user?.avatar ? (
+            <Image source={{ uri: getAvatarUrl(user.avatar) }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' }]}>
+              <Icons.User size={32} color={colors.primary} />
+            </View>
+          )}
           <Text style={[styles.userName, { color: colors.text }]}>{user?.name || 'Customer'}</Text>
           <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email || 'customer@example.com'}</Text>
           
-          {user?.hasMembership && (
-            <View style={[styles.badge, { backgroundColor: colors.accent }]}>
-              <Text style={styles.badgeText}>⭐ AC CLUB GOLD MEMBER</Text>
+          {userLocation && (
+            <View style={styles.locationContainer}>
+              <Icons.MapPin size={14} color={colors.primary} />
+              <View style={{ marginLeft: 6, alignItems: 'center' }}>
+                <Text numberOfLines={2} style={[styles.locationText, { color: colors.textSecondary }]}>
+                  {userLocation.addressString}
+                </Text>
+                <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '800', marginTop: 2 }}>
+                  GPS: {userLocation.latitude.toFixed(6)}, {userLocation.longitude.toFixed(6)}
+                </Text>
+              </View>
             </View>
           )}
         </View>
@@ -112,6 +134,15 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     marginBottom: 12,
   },
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
   userName: {
     fontSize: 18,
     fontWeight: '800',
@@ -130,6 +161,18 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 11,
     fontWeight: '800',
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  locationText: {
+    fontSize: 12,
+    marginLeft: 4,
+    textAlign: 'center',
   },
   menuList: {
     marginTop: 8,

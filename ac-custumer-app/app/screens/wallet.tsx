@@ -58,7 +58,7 @@ export default function WalletScreen() {
       updateWalletBalance(newBalance);
       setAddAmount('');
       await fetchData();
-      Alert.alert('Success', `$${amount.toFixed(2)} added to your wallet!`);
+      Alert.alert('Success', `₹${amount.toFixed(2)} added to your wallet!`);
     } catch (err: any) {
       Alert.alert('Failed', err.message);
     } finally {
@@ -91,7 +91,7 @@ export default function WalletScreen() {
         {/* Balance Card */}
         <View style={[styles.balanceCard, { backgroundColor: colors.primary }]}>
           <Text style={styles.cardLabel}>WALLET BALANCE</Text>
-          <Text style={styles.balanceVal}>${balance.toFixed(2)}</Text>
+          <Text style={styles.balanceVal}>₹{balance.toFixed(2)}</Text>
         </View>
 
         {/* Add Money */}

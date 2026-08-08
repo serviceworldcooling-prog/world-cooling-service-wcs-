@@ -35,3 +35,9 @@ export const markOneRead = async (id: string) => {
   const { data } = await apiClient.put(`/notifications/${id}/read`);
   return data;
 };
+
+// DELETE /api/notifications/:id
+export const deleteNotification = async (id: string) => {
+  const { data } = await apiClient.delete(`/notifications/${id}`);
+  return data;
+};

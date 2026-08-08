@@ -50,7 +50,7 @@ const getMyProfile = asyncWrapper(async (req, res) => {
 
 // PUT /api/v1/technicians/profile — technician updates own profile
 const updateMyProfile = asyncWrapper(async (req, res) => {
-  const allowed = ['name', 'phone', 'avatar', 'city', 'fcmToken'];
+  const allowed = ['name', 'phone', 'avatar', 'city', 'state', 'pincode', 'address', 'specialty', 'fcmToken'];
   const updates = {};
   allowed.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
   const tech = await User.findByIdAndUpdate(req.user._id, updates, { new: true }).select('-password');
@@ -152,7 +152,37 @@ const changePassword = asyncWrapper(async (req, res) => {
   return sendSuccess(res, 200, 'Password changed successfully');
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/v1/technicians/jobs/:bookingId/share-location
+// ─────────────────────────────────────────────────────────────────────────────
+const shareLocation = asyncWrapper(async (req, res) => {
+  const Booking = require('../models/Booking');
+  const Notification = require('../models/Notification');
+  const booking = await Booking.findOne({
+    _id: req.params.bookingId,
+    technicianId: req.user._id,
+  });
+  if (!booking) return sendError(res, 404, 'Booking not found or not assigned to you');
+  
+  const { lat, lng } = req.body;
+  if (lat !== undefined) booking.techLat = lat;
+  if (lng !== undefined) booking.techLng = lng;
+  booking.isLiveLocation = true;
+  await booking.save();
+  
+  // Notify customer
+  await Notification.create({
+    user: booking.customerId,
+    title: 'Technician is En-Route',
+    message: `Your technician ${req.user.name} is traveling to your location. You can track them live now!`,
+    type: 'booking',
+    refId: booking.bookingId,
+  }).catch(() => {});
+
+  return sendSuccess(res, 200, 'Live location sharing activated', { booking });
+});
+
 module.exports = {
   getMyJobs, updateMyStatus, getMyEarnings, getMyProfile, updateMyProfile,
-  acceptJob, startJob, getJobById, changePassword,
+  acceptJob, startJob, getJobById, changePassword, shareLocation,
 };

@@ -1,53 +1,67 @@
 import React from 'react';
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Alert, SafeAreaView, StatusBar } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, ROUNDED, SPACING, SHADOWS } from '../../constants/theme';
-import { ScreenContainer } from '../../components/Common';
 import { useApp } from '../../context/AppContext';
 
 export const ProfileScreen = ({ navigation }: any) => {
   const { user, logout } = useApp();
+  const insets = useSafeAreaInsets();
 
-  // Only flow-relevant menu items for a serviceman
-  // Removed: Membership, SubscriptionPlans, PaymentHistory, Wallet, LoyaltyRewards, WarrantyStatus, ReferEarn, QuotesRequest, ACDiagnosis, Blog, ServiceComparison
   const menuGroups = [
     {
-      title: 'MY WORK',
+      title: 'TECHNICIAN UTILITIES',
       items: [
-        { icon: 'assignment',          label: 'Assigned Jobs',    route: 'AssignedJobs' }, // FIX: was 'MyBookings' — not registered
-        { icon: 'history',             label: 'Job History',      route: 'ServiceHistory' },
-        { icon: 'chat-bubble-outline', label: 'Raise Complaint',  route: 'RaiseComplaint' },
-        { icon: 'history-edu',         label: 'Complaint History',route: 'ComplaintHistory' },
+        { icon: 'shopping-basket',     label: 'PARTS & INVENTORY REQUESTS', route: 'PartsRequest' },
+        { icon: 'security',            label: 'SAFETY COMPLIANCE SOP',    route: 'SafetyChecklist' },
+        { icon: 'star-half',           label: 'CUSTOMER FEEDBACK & REVIEWS', route: 'FeedbackRatings' },
+        { icon: 'history',             label: 'JOB HISTORY LOG',          route: 'ServiceHistory' },
       ]
     },
     {
-      title: 'ACCOUNT',
+      title: 'COMPLAINTS & TICKETS',
       items: [
-        { icon: 'person-outline', label: 'Edit Profile',    route: 'EditProfile' },
-        { icon: 'help-outline',   label: 'Help Center',     route: 'HelpCenter' },
-        { icon: 'settings',       label: 'Settings',        route: 'Settings' },
-        { icon: 'lock-open',      label: 'Change Password', route: 'ChangePassword' },
-        // 'DeleteAccount' screen exists but is not in the navigator — show Alert instead
-        { icon: 'delete-outline', label: 'Delete Account',  route: '_DeleteAccount', danger: true },
+        { icon: 'feedback',            label: 'RAISE SUPPORT TICKET',     route: 'RaiseComplaint' },
+        { icon: 'history-edu',         label: 'TICKET HISTORY',           route: 'ComplaintHistory' },
+      ]
+    },
+    {
+      title: 'ACCOUNT SETTINGS',
+      items: [
+        { icon: 'person-outline',      label: 'EDIT TECHNICIAN PROFILE',  route: 'EditProfile' },
+        { icon: 'help-outline',        label: 'HELP & KNOWLEDGE CENTER',  route: 'HelpCenter' },
+        { icon: 'settings',            label: 'APP PREFERENCE SETTINGS',  route: 'Settings' },
+        { icon: 'lock-open',           label: 'CHANGE SECURITY PASSWORD', route: 'ChangePassword' },
+        { icon: 'delete-outline',      label: 'REQUEST ACCOUNT DELETION', route: '_DeleteAccount', danger: true },
       ]
     },
   ];
 
-  const handleLogout = async () => {
-    await logout();
-    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to log out of WCS technician portal?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Logout", style: "destructive", onPress: async () => {
+          await logout();
+          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        }}
+      ]
+    );
   };
 
   const handleMenuPress = (route: string) => {
     if (route === '_DeleteAccount') {
       Alert.alert(
         'Delete Account',
-        'Are you sure you want to delete your account? This action is irreversible.',
+        'Are you sure you want to delete your technician account? This action is irreversible and requires admin clearance.',
         [
           { text: 'Cancel', style: 'cancel' },
           {
-            text: 'Delete', style: 'destructive',
-            onPress: () => Alert.alert('Request Sent', 'Your account deletion request has been submitted. Our team will process it within 48 hours.'),
+            text: 'Delete Request', style: 'destructive',
+            onPress: () => Alert.alert('Request Sent', 'Your account deletion request has been submitted. Our compliance team will contact you within 48 hours.'),
           },
         ]
       );
@@ -57,186 +71,257 @@ export const ProfileScreen = ({ navigation }: any) => {
   };
 
   return (
-    <ScreenContainer title="My Profile" noHeader={false}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
-        
-        {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <Image source={{ uri: user?.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
-          <Text style={styles.name}>{user?.name}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
-          <Text style={styles.phone}>{user?.phone}</Text>
-          
-          <View style={styles.badgeRow}>
-            <View style={styles.membershipBadge}>
-              <MaterialIcons name="stars" size={14} color="#D4AF37" style={{ marginRight: 4 }} />
-              <Text style={styles.membershipText}>{user?.specialty || 'AC Expert'}</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: '#FAF9F6' }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* Classical Header */}
+      <View style={[styles.headerPanel, { paddingTop: Math.max(16, insets.top), backgroundColor: '#FFFFFF', borderBottomColor: COLORS.primary + '20' }]}>
+        <Text style={[styles.brandHeader, { color: COLORS.secondary }]}>TECHNICIAN CONSOLE</Text>
+        <Text style={[styles.headerTitle, { color: COLORS.primary }]}>MORE OPTIONS</Text>
+        <View style={[styles.headerDivider, { backgroundColor: COLORS.secondary + '40' }]} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* User Card */}
+        <View style={[styles.userBox, { backgroundColor: '#ffffff', borderColor: COLORS.border }]}>
+          {user?.avatar ? (
+            <Image source={{ uri: user.avatar }} style={[styles.profileAvatar, { borderColor: COLORS.secondary + '30' }]} />
+          ) : (
+            <View style={[styles.avatarPlaceholder, { backgroundColor: COLORS.primary + '15', borderColor: COLORS.primary + '30' }]}>
+              <MaterialIcons name="person" size={24} color={COLORS.primary} />
             </View>
+          )}
+          <View style={{ marginLeft: 14, flex: 1 }}>
+            <View style={styles.userNameRow}>
+              <Text style={[styles.userName, { color: COLORS.primary }]} numberOfLines={1}>
+                {user?.name?.toUpperCase() || 'TECHNICIAN'}
+              </Text>
+              <View style={[styles.specialtyBadge, { backgroundColor: COLORS.secondary + '15', borderColor: COLORS.secondary + '40' }]}>
+                <MaterialIcons name="verified" size={10} color={COLORS.secondary} />
+                <Text style={[styles.specialtyBadgeText, { color: COLORS.secondary }]}>{user?.specialty || 'AC EXPERT'}</Text>
+              </View>
+            </View>
+            <Text style={[styles.userEmail, { color: COLORS.textSecondary }]}>{user?.email || 'tech@wcs.com'}</Text>
+            <Text style={[styles.userPhone, { color: COLORS.textLight }]}>{user?.phone || '—'}</Text>
           </View>
         </View>
 
-        {/* Menu Groups */}
-        {menuGroups.map((group, groupIdx) => (
-          <View key={groupIdx} style={styles.groupContainer}>
-            <Text style={styles.groupTitle}>{group.title}</Text>
-            <View style={styles.groupCard}>
+        {/* Dynamic Groups */}
+        {menuGroups.map((group, gIdx) => (
+          <View key={gIdx} style={styles.groupContainer}>
+            <Text style={[styles.groupTitle, { color: COLORS.textSecondary }]}>{group.title}</Text>
+            <View style={[styles.groupCard, { backgroundColor: '#ffffff', borderColor: COLORS.border }]}>
               {group.items.map((item, itemIdx) => (
                 <TouchableOpacity
                   key={itemIdx}
-                  style={[
-                    styles.menuItem,
-                    itemIdx === group.items.length - 1 ? { borderBottomWidth: 0 } : null
-                  ]}
+                  activeOpacity={0.8}
                   onPress={() => handleMenuPress(item.route)}
-                  activeOpacity={0.7}
+                  style={[
+                    styles.itemRow, 
+                    itemIdx < group.items.length - 1 && { borderBottomWidth: 1.5, borderBottomColor: COLORS.divider }
+                  ]}
                 >
-                  <View style={styles.menuItemLeft}>
-                    <View style={[
-                      styles.iconCircle, 
-                      item.danger ? { backgroundColor: COLORS.dangerLight } : { backgroundColor: COLORS.background }
-                    ]}>
-                      <MaterialIcons 
-                        name={item.icon as any} 
-                        size={20} 
-                        color={item.danger ? COLORS.danger : COLORS.primary} 
-                      />
+                  <View style={styles.itemLeft}>
+                    <View style={[styles.itemIconBox, { backgroundColor: item.danger ? COLORS.dangerLight : COLORS.primary + '08' }]}>
+                      <MaterialIcons name={item.icon as any} size={16} color={item.danger ? COLORS.danger : COLORS.primary} />
                     </View>
-                    <Text style={[styles.menuItemLabel, item.danger ? { color: COLORS.danger } : null]}>
-                      {item.label}
-                    </Text>
+                    <Text style={[styles.itemLabel, { color: item.danger ? COLORS.danger : COLORS.textPrimary }]}>{item.label}</Text>
                   </View>
-                  <MaterialIcons 
-                    name="chevron-right" 
-                    size={20} 
-                    color={item.danger ? COLORS.danger : COLORS.textLight} 
-                  />
+                  <MaterialIcons name="chevron-right" size={16} color={item.danger ? COLORS.danger : COLORS.textSecondary} />
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         ))}
 
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-          <MaterialIcons name="exit-to-app" size={20} color={COLORS.danger} style={{ marginRight: SPACING.sm }} />
-          <Text style={styles.logoutText}>Log Out Account</Text>
+        <TouchableOpacity 
+          style={[styles.logoutBtn, { borderColor: '#EF4444' + '30', backgroundColor: '#EF444408' }]}
+          onPress={handleLogout}
+        >
+          <MaterialIcons name="exit-to-app" size={16} color="#EF4444" />
+          <Text style={[styles.logoutText, { color: '#EF4444' }]}>LOG OUT OF CONSOLE</Text>
         </TouchableOpacity>
+
+        {/* Heritage Brand Signature Footer */}
+        <View style={styles.footerSignature}>
+          <Text style={[styles.signatureText, { color: COLORS.textSecondary }]}>WORLD COOLING SERVICE</Text>
+          <View style={[styles.signatureLine, { backgroundColor: COLORS.border }]} />
+          <Text style={[styles.versionText, { color: COLORS.textLight }]}>EST. 2026  •  TECHNICIAN VERSION 1.0.0</Text>
+        </View>
       </ScrollView>
-    </ScreenContainer>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 100,
+    flex: 1,
   },
-  profileCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: ROUNDED.md,
-    padding: SPACING.lg,
+  headerPanel: {
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1.5,
+    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  brandHeader: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  headerTitle: { 
+    fontSize: 18, 
+    fontWeight: '900', 
+    letterSpacing: 1.5,
+  },
+  headerDivider: {
+    width: 24,
+    height: 2,
+    marginTop: 10,
+    borderRadius: 1,
+  },
+  scroll: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 40,
+  },
+  userBox: {
+    flexDirection: 'row',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    marginBottom: 20,
     ...SHADOWS.small,
   },
-  avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 3,
-    borderColor: COLORS.primary,
-    marginBottom: SPACING.md,
+  avatarPlaceholder: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  name: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.primary,
+  profileAvatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 1.5,
   },
-  email: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  phone: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    marginTop: SPACING.sm,
-  },
-  membershipBadge: {
+  userNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FDF7E7',
-    borderColor: 'rgba(212, 175, 55, 0.2)',
-    borderWidth: 1,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
-    borderRadius: ROUNDED.full,
+    flexWrap: 'wrap',
+    gap: 6,
   },
-  membershipText: {
+  userName: {
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  specialtyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    gap: 3,
+  },
+  specialtyBadgeText: {
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  userEmail: {
     fontSize: 11,
-    color: '#B8860B',
-    fontWeight: '800',
+    marginTop: 4,
+    fontWeight: '600',
+  },
+  userPhone: {
+    fontSize: 11,
+    marginTop: 2,
+    fontWeight: '600',
   },
   groupContainer: {
-    marginBottom: SPACING.md,
+    marginBottom: 20,
   },
   groupTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.textLight,
-    letterSpacing: 1,
-    marginBottom: SPACING.xs,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    marginBottom: 8,
     marginLeft: 4,
   },
   groupCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: ROUNDED.md,
+    borderWidth: 1.5,
+    borderRadius: 12,
     overflow: 'hidden',
     ...SHADOWS.small,
   },
-  menuItem: {
+  itemRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.divider,
+    alignItems: 'center',
+    padding: 14,
   },
-  menuItemLeft: {
+  itemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
   },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
+  itemIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: 'center',
-    marginRight: SPACING.sm,
+    justifyContent: 'center',
   },
-  menuItemLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
+  itemLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: ROUNDED.md,
-    padding: SPACING.md,
-    marginTop: SPACING.md,
-    borderColor: COLORS.dangerLight,
-    borderWidth: 1,
+    gap: 8,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    padding: 14,
+    marginTop: 12,
     ...SHADOWS.small,
   },
   logoutText: {
-    color: COLORS.danger,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  footerSignature: {
+    alignItems: 'center',
+    marginTop: 40,
+    marginBottom: 20,
+  },
+  signatureText: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 3,
+  },
+  signatureLine: {
+    width: 24,
+    height: 1.5,
+    marginVertical: 10,
+    borderRadius: 1,
+    opacity: 0.3,
+  },
+  versionText: {
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
 });

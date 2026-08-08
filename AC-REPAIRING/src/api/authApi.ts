@@ -18,6 +18,9 @@ export interface TechnicianUser {
   completedJobs: number;
   earnings: number;
   city: string;
+  state?: string;
+  address?: string;
+  pincode?: string;
   certifications: string[];
   technicianStatus: 'Available' | 'On Job' | 'Off Duty';
   status: 'Active' | 'Inactive' | 'Banned';

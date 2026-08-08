@@ -16,7 +16,7 @@ export const BookingDetailsScreen = ({ route, navigation }: any) => {
   };
 
   return (
-    <ScreenContainer title="Booking Details" onBack={() => navigation.goBack()}>
+    <ScreenContainer title="Booking Details" onBack={() => navigation.goBack()} navigation={navigation} activeRoute="AssignedJobs">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
         
         {/* Status Header */}

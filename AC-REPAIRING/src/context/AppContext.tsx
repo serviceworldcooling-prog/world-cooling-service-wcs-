@@ -27,6 +27,7 @@ interface AppContextType {
   loadJobs: (status?: JobStatus) => Promise<void>;
   acceptJob: (bookingId: string) => Promise<void>;
   startJob: (bookingId: string) => Promise<void>;
+  shareLocation: (bookingId: string, coords?: { lat: number; lng: number }) => Promise<void>;
 
   // Notifications
   notifications: TechNotification[];
@@ -61,6 +62,10 @@ interface AppContextType {
     phone?: string;
     avatar?: string;
     city?: string;
+    state?: string;
+    address?: string;
+    pincode?: string;
+    specialty?: string;
     membership?: 'Standard' | 'Gold' | 'Platinum';
   }) => Promise<void>;
   updateTechStatus: (status: 'Available' | 'On Job' | 'Off Duty') => Promise<void>;
@@ -71,15 +76,16 @@ const fallbackUser: TechnicianUser = {
   name: 'Rahul Sharma',
   email: 'rahul@coolbreeze.com',
   phone: '9876543210',
-  avatar: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150',
+  avatar: '',
   role: 'technician',
   specialty: 'AC Repair & AMC',
   rating: 4.8,
   completedJobs: 128,
   earnings: 24800,
   city: 'Noida',
-  certifications: ['HVAC Certified', 'Gas Handling'],
+  certifications: ['Certified AC Master Tech'],
   technicianStatus: 'Available',
+  status: 'Active',
   addresses: MOCK_ADDRESSES,
   membership: 'Gold',
 };
@@ -189,6 +195,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setJobs(prev => prev.map(j => j._id === bookingId ? { ...j, ...updated } : j));
   };
 
+  const shareLocation = async (bookingId: string, coords?: { lat: number; lng: number }) => {
+    const updated = await jobsApi.shareLocation(bookingId, coords);
+    setJobs(prev => prev.map(j => j._id === bookingId ? { ...j, ...updated } : j));
+  };
+
   // ── Notifications ───────────────────────────────────────────────────────────
   const loadNotifications = useCallback(async () => {
     setNotifLoading(true);
@@ -280,6 +291,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     phone?: string;
     avatar?: string;
     city?: string;
+    state?: string;
+    address?: string;
+    pincode?: string;
+    specialty?: string;
     membership?: 'Standard' | 'Gold' | 'Platinum';
   }) => {
     const updated = await profileApi.updateProfile(payload);
@@ -306,7 +321,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // auth
       user: user ?? fallbackUser, isAuthenticated: !!user, authLoading, authError, login, logout,
       // jobs
-      jobs, jobsLoading, loadJobs, acceptJob, startJob,
+      jobs, jobsLoading, loadJobs, acceptJob, startJob, shareLocation,
       // notifications
       notifications, unreadCount, notifLoading, loadNotifications,
       markNotificationRead, clearNotifications,

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -25,10 +25,10 @@
 
   html {
     scroll-behavior: smooth;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background-color: #F8FAFC;
     color: #0F172A;
     line-height: 1.5;
@@ -36,93 +36,111 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Custom Sleek Scrollbar */
   ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #F1F5F9;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
     background: #CBD5E1;
-    border-radius: 10px;
+    border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #94A3B8;
+    background: #0F766E;
   }
 }
 
 @layer components {
+  /* Navigation */
   .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-500 hover:text-primary-700 hover:bg-primary-50 transition-all duration-200 text-sm font-medium cursor-pointer;
+    @apply flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-500 hover:text-primary-700 hover:bg-primary-50/80 transition-all duration-200 text-xs font-600 cursor-pointer select-none;
   }
   .sidebar-link.active {
-    @apply bg-primary-700 text-white shadow-md;
+    @apply bg-gradient-to-r from-primary-700 to-primary-600 text-white shadow-md shadow-primary-700/20 font-700;
   }
   .sidebar-link.active svg {
     @apply text-white;
   }
 
+  /* Cards */
   .stat-card {
-    @apply bg-white rounded-2xl p-5 border border-slate-100 shadow-card hover:shadow-card-hover transition-all duration-300;
+    @apply bg-white rounded-2xl p-5 border border-slate-200/70 shadow-card hover:shadow-card-hover transition-all duration-300 relative overflow-hidden;
+  }
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-slate-200/60 shadow-glass rounded-2xl;
+  }
+  .glass-panel-dark {
+    @apply bg-slate-900/80 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-3xl;
   }
 
+  /* Buttons */
   .btn-primary {
-    @apply inline-flex items-center gap-2 bg-primary-700 hover:bg-primary-800 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md active:scale-95;
+    @apply inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primary-700 to-primary-600 hover:from-primary-800 hover:to-primary-700 text-white text-xs font-700 px-4 py-2.5 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:shadow-primary-700/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold px-5 py-2.5 rounded-xl border border-slate-200 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95;
+    @apply inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-700 px-4 py-2.5 rounded-xl border border-slate-200 transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer;
   }
 
   .btn-danger {
-    @apply inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 active:scale-95;
+    @apply inline-flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 text-white text-xs font-700 px-4 py-2.5 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] cursor-pointer;
   }
 
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-xs font-600 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer;
+  }
+
+  /* Inputs */
   .input-field {
-    @apply w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+    @apply w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all duration-200 shadow-subtle;
   }
 
+  /* Badges */
   .badge {
-    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-600;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-700 tracking-wide;
   }
-  .badge-upcoming  { @apply bg-teal-50 text-teal-700; }
-  .badge-completed { @apply bg-green-50 text-green-700; }
-  .badge-cancelled { @apply bg-red-50 text-red-600; }
-  .badge-pending   { @apply bg-amber-50 text-amber-700; }
-  .badge-active    { @apply bg-emerald-50 text-emerald-700; }
-  .badge-inactive  { @apply bg-slate-100 text-slate-500; }
+  .badge-upcoming  { @apply bg-teal-50 text-teal-700 border border-teal-200/50; }
+  .badge-completed { @apply bg-emerald-50 text-emerald-700 border border-emerald-200/50; }
+  .badge-cancelled { @apply bg-rose-50 text-rose-600 border border-rose-200/50; }
+  .badge-pending   { @apply bg-amber-50 text-amber-700 border border-amber-200/50; }
+  .badge-active    { @apply bg-emerald-50 text-emerald-700 border border-emerald-200/50; }
+  .badge-inactive  { @apply bg-slate-100 text-slate-600 border border-slate-200/50; }
 
+  /* Page Layout */
   .page-header {
-    @apply mb-6 flex items-center justify-between;
+    @apply mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4;
   }
 
   .page-title {
-    @apply text-2xl font-800 text-slate-900;
+    @apply text-xl md:text-2xl font-800 text-slate-900 tracking-tight;
   }
 
   .page-subtitle {
-    @apply text-sm text-slate-500 mt-0.5;
+    @apply text-xs md:text-sm text-slate-500 mt-0.5 font-500;
   }
 
   .section-card {
-    @apply bg-white rounded-2xl border border-slate-100 shadow-card overflow-hidden;
+    @apply bg-white rounded-2xl border border-slate-200/70 shadow-card overflow-hidden;
   }
 
+  /* Tables */
   .table-header {
-    @apply text-xs font-700 text-slate-500 uppercase tracking-wider px-5 py-3.5 bg-slate-50 border-b border-slate-100;
+    @apply text-[11px] font-700 text-slate-400 uppercase tracking-wider px-5 py-3.5 bg-slate-50/80 border-b border-slate-200/60 select-none;
   }
 
   .table-cell {
-    @apply px-5 py-4 text-sm text-slate-700;
+    @apply px-5 py-3.5 text-xs text-slate-700 font-500;
   }
 
   .table-row {
-    @apply border-b border-slate-50 hover:bg-slate-50/70 transition-colors duration-150;
+    @apply border-b border-slate-100/80 hover:bg-slate-50/70 transition-colors duration-150;
   }
 
   .avatar {
-    @apply rounded-full object-cover ring-2 ring-white;
+    @apply rounded-full object-cover ring-2 ring-slate-100;
   }
 }
 
@@ -132,18 +150,17 @@
   .font-600 { font-weight: 600; }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-primary-700 to-primary-500 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary-700 via-primary-600 to-primary-500 bg-clip-text text-transparent;
   }
 
-  .animate-fade-in { animation: fadeIn 0.35s ease-in-out both; }
-  .animate-slide-up { animation: slideUp 0.4s ease-out both; }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+  .text-gradient-orange {
+    @apply bg-gradient-to-r from-accent to-amber-500 bg-clip-text text-transparent;
   }
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
+
+  .bg-grid-pattern {
+    background-size: 32px 32px;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   }
 }

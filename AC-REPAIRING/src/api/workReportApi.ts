@@ -6,6 +6,15 @@ export interface WorkReportPayload {
   selectedWorks: string[];
   techNote: string;
   photos: string[];
+  video: string;
+  warrantyActive?: boolean;
+  warrantyPeriod?: string;
+  warrantyDetails?: string;
+  acNo?: string;
+  modelNo?: string;
+  warrantyReason?: string;
+  extraMaterialCharges?: number;
+  extraAmountTaken?: number;
 }
 
 export interface WorkReportResponse {

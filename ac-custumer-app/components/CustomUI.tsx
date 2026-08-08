@@ -5,6 +5,7 @@ import {
   TouchableOpacity, 
   View, 
   TextInput as RNTextInput, 
+  TextInputProps as RNTextInputProps,
   ActivityIndicator, 
   Animated, 
   Pressable 
@@ -98,45 +99,36 @@ export const SecondaryButton: React.FC<ButtonProps> = ({ title, onPress, loading
   );
 };
 
-interface InputProps {
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  secureTextEntry?: boolean;
-  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+interface InputProps extends RNTextInputProps {
   label?: string;
   error?: string;
+  containerStyle?: any;
 }
 
 export const TextInput: React.FC<InputProps> = ({
-  placeholder,
-  value,
-  onChangeText,
-  secureTextEntry,
-  keyboardType = 'default',
   label,
-  error
+  error,
+  containerStyle,
+  style,
+  ...rest
 }) => {
   const { themeMode } = useAppStore();
   const colors = themeMode === 'dark' ? Colors.dark : Colors.light;
 
   return (
-    <View style={styles.inputContainer}>
+    <View style={[styles.inputContainer, containerStyle]}>
       {label && <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{label}</Text>}
       <RNTextInput
-        placeholder={placeholder}
-        placeholderTextColor={colors.textSecondary}
-        value={value}
-        onChangeText={onChangeText}
-        secureTextEntry={secureTextEntry}
-        keyboardType={keyboardType}
+        placeholderTextColor={colors.textSecondary + '80'}
+        {...rest}
         style={[
           styles.input,
           { 
             color: colors.text, 
             borderColor: error ? colors.error : colors.border,
             backgroundColor: colors.card
-          }
+          },
+          style
         ]}
       />
       {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}

@@ -147,3 +147,13 @@ exports.deleteService = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.getPublicTechnicians = async (req, res, next) => {
+  try {
+    const User = require('../models/User');
+    const technicians = await User.find({ role: 'technician' }).select('name avatar phone specialty rating reviewsCount');
+    res.status(200).json({ success: true, count: technicians.length, technicians });
+  } catch (err) {
+    next(err);
+  }
+};

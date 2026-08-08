@@ -31,7 +31,9 @@ export default function MenuPage() {
       title: 'AC Services',
       items: [
         { label: 'Book a Service', icon: 'Wrench', route: '/screens/categories' },
+        { label: 'Seasonal Offers', icon: 'Tag', route: '/screens/offers' },
         { label: 'My Addresses', icon: 'MapPin', route: '/screens/saved-addresses' },
+        { label: 'Buy & Sell ACs', icon: 'ShoppingBag', route: '/screens/product-market' },
       ]
     },
     {

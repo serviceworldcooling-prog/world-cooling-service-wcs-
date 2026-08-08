@@ -159,6 +159,16 @@ const generateEndOtp = asyncWrapper(async (req, res) => {
     await record.save();
   }
 
+  // Create in-app notification for the customer with the regenerated OTP
+  const Notification = require('../models/Notification');
+  await Notification.create({
+    user: booking.customerId,
+    title: 'Service Completion OTP',
+    message: `Your service is complete. Please share this OTP: ${record.endOtp} with your technician to confirm completion.`,
+    type: 'booking',
+    refId: booking._id.toString(),
+  });
+
   return sendSuccess(res, 200, 'End OTP generated', {
     endOtp:    record.endOtp,
     expiresAt: record.expiresAt,
@@ -262,6 +272,119 @@ const verifyEndOtp = asyncWrapper(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// @route  POST /api/v1/service-otp/verify-end-tech
+// @access Private (technician)
+// Body: { bookingId, otp }
+// ─────────────────────────────────────────────────────────────────────────────
+const verifyEndOtpTech = asyncWrapper(async (req, res) => {
+  const { bookingId, otp } = req.body;
+  if (!bookingId || !otp) return sendError(res, 400, 'bookingId and otp are required');
+
+  const record = await ServiceOTP.findOne({ bookingId });
+  if (!record) return sendError(res, 404, 'No active OTP for this booking');
+
+  if (record.technicianId.toString() !== req.user._id.toString()) {
+    return sendError(res, 403, 'Access denied');
+  }
+
+  if (!record.startOtpVerified) {
+    return sendError(res, 400, 'Start OTP must be verified first');
+  }
+
+  if (record.endOtpVerified) {
+    return sendError(res, 400, 'End OTP already verified');
+  }
+
+  if (!record.endOtp) {
+    return sendError(res, 400, 'Completion OTP has not been generated yet');
+  }
+
+  if (new Date() > record.expiresAt) {
+    await ServiceOTP.deleteOne({ _id: record._id });
+    return sendError(res, 400, 'OTP has expired. Please submit the work report again to generate a new OTP.');
+  }
+
+  if (record.endOtp !== otp) {
+    return sendError(res, 400, 'Invalid OTP. Please check with the customer.');
+  }
+
+  // Find the WorkReport for this booking
+  const WorkReport = require('../models/WorkReport');
+  const report = await WorkReport.findOne({ bookingId });
+  if (!report) {
+    return sendError(res, 404, 'Work report not found for this booking');
+  }
+
+  // Mark report as OTP verified
+  report.otpVerified = true;
+  await report.save();
+
+  // Update booking and attach workReport data
+  await Booking.findByIdAndUpdate(bookingId, {
+    status:          'Completed',
+    completedAt:     new Date(),
+    endOtpVerified:  true,
+    otpVerifiedAt:   new Date(),
+    otpStatus:       'End OTP Verified - Work Completed',
+    paymentStatus:   'Paid',
+    workReport: {
+      submittedAt: report.submittedAt.toLocaleString(),
+      workDone: report.workDone,
+      photos: report.photos || [],
+      techNote: report.techNote || '',
+      video: report.video || '',
+    },
+  });
+
+  // Delete OTP record immediately after successful verification
+  await ServiceOTP.deleteOne({ _id: record._id });
+
+  // Free up technician and update earnings
+  const booking = await Booking.findById(bookingId);
+  if (booking?.technicianId) {
+    const User = require('../models/User');
+    const Transaction = require('../models/Transaction');
+    const Reward      = require('../models/Reward');
+
+    await User.findByIdAndUpdate(booking.technicianId, {
+      technicianStatus: 'Available',
+      activeBookingId:  null,
+      $inc: { completedJobs: 1, earnings: booking.finalPrice * 0.7 },
+    });
+
+    await User.findByIdAndUpdate(booking.customerId, {
+      $inc: { totalSpent: booking.finalPrice },
+    });
+
+    await Transaction.create({
+      customerId:  booking.customerId,
+      type:        'credit',
+      amount:      booking.finalPrice,
+      description: `Payment for ${booking.service} (${booking.invoiceId})`,
+      bookingId:   booking._id,
+      method:      booking.paymentMethod || 'Cash',
+      status:      'success',
+    });
+
+    // Award reward points
+    const pts = Math.floor(booking.finalPrice * 10);
+    if (pts > 0) {
+      await Reward.findOneAndUpdate(
+        { customerId: booking.customerId },
+        { $inc: { totalPoints: pts }, lastActivity: new Date() },
+        { upsert: true }
+      );
+    }
+  }
+
+  return sendSuccess(res, 200, 'OTP Verified Successfully! Work report submitted to admin.', {
+    endOtpVerified: true,
+    otpStatus: 'End OTP Verified - Work Completed',
+    message: 'Work report successfully submitted to admin.',
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // @route  GET /api/v1/service-otp/status/:bookingId
 // @access Private (admin)
 // Admin panel sees OTP verification status text
@@ -293,6 +416,6 @@ const getOtpStatus = asyncWrapper(async (req, res) => {
 
 module.exports = {
   getStartOtp, verifyStartOtp,
-  generateEndOtp, verifyEndOtp,
+  generateEndOtp, verifyEndOtp, verifyEndOtpTech,
   getOtpStatus,
 };

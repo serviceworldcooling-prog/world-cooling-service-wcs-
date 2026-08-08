@@ -3,8 +3,8 @@ import * as SecureStore from 'expo-secure-store';
 
 // ─── Change this to your machine's local IP when testing on a physical device ───
 // For Android emulator use: http://10.0.2.2:5000/api/v1
-// For physical device use: http://<YOUR_LOCAL_IP>:5000/api/v1
-export const BASE_URL = 'http://192.168.73.251:5000/api/v1';
+// For physical device: set EXPO_PUBLIC_API_BASE_URL in .env file
+export const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.53.251:5000/api/v1';
 
 const TOKEN_KEY = 'ac_customer_token';
 
@@ -37,7 +37,7 @@ export const removeToken = async () => {
 // ─── Axios instance ───────────────────────────────────
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000,
+  timeout: 45000,
   headers: { 'Content-Type': 'application/json' },
 });
 

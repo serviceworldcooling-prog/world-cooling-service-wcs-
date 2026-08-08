@@ -27,6 +27,8 @@ const workReportRoutes  = require('./src/routes/workReportRoutes');
 const notificationRoutes= require('./src/routes/notificationRoutes');
 const adminRoutes       = require('./src/routes/adminRoutes');
 const technicianRoutes  = require('./src/routes/technicianRoutes');
+const productRoutes     = require('./src/routes/productRoutes');
+const workChecklistRoutes = require('./src/routes/workChecklistRoutes');
 
 // ─── Connect to MongoDB ───────────────────────────────────────────────────────
 connectDB();
@@ -38,23 +40,16 @@ app.use(helmet());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // CORS
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim());
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS blocked: ${origin}`));
-    }
-  },
+  origin: true,
   credentials: true,
 }));
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: Number(process.env.RATE_LIMIT_MAX) || 100,
+  max: Number(process.env.RATE_LIMIT_MAX) || 5000,
+  skip: (req) => process.env.NODE_ENV === 'development' || req.path.includes('/tracking'),
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests. Please try again later.' },
@@ -95,6 +90,8 @@ app.use(`${API}/work-reports`,  workReportRoutes);
 app.use(`${API}/notifications`, notificationRoutes);
 app.use(`${API}/admin`,         adminRoutes);
 app.use(`${API}/technicians`,   technicianRoutes);
+app.use(`${API}/products`,      productRoutes);
+app.use(`${API}/work-checklist`,  workChecklistRoutes);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((req, res) => {

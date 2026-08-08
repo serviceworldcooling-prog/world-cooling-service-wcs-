@@ -1,8 +1,17 @@
+const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
 const WalletTransaction = require('../models/WalletTransaction');
 const Notification = require('../models/Notification');
 const Coupon = require('../models/Coupon');
+
+// Helper to query by either Mongoose _id or human-readable bookingId
+const getQuery = (id, userId) => {
+  const isObjectId = mongoose.Types.ObjectId.isValid(id);
+  return isObjectId
+    ? { _id: id, customerId: userId }
+    : { bookingId: id, customerId: userId };
+};
 
 // ─────────────────────────────────────────
 // Helper: record a wallet transaction & update user balance
@@ -41,10 +50,7 @@ const recordWalletTx = async (userId, type, amount, description, source, refId =
 // ─────────────────────────────────────────
 exports.getPaymentPreview = async (req, res, next) => {
   try {
-    const booking = await Booking.findOne({
-      _id: req.params.bookingId,
-      customer: req.user._id,
-    });
+    const booking = await Booking.findOne(getQuery(req.params.bookingId, req.user._id));
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -85,10 +91,7 @@ exports.processPayment = async (req, res, next) => {
   try {
     const { paymentMethod, couponCode } = req.body;
 
-    const booking = await Booking.findOne({
-      _id: req.params.bookingId,
-      customer: req.user._id,
-    });
+    const booking = await Booking.findOne(getQuery(req.params.bookingId, req.user._id));
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -257,10 +260,8 @@ exports.addMoneyToWallet = async (req, res, next) => {
 // ─────────────────────────────────────────
 exports.getInvoice = async (req, res, next) => {
   try {
-    const booking = await Booking.findOne({
-      _id: req.params.bookingId,
-      customer: req.user._id,
-    }).populate('customer', 'name email phone');
+    const booking = await Booking.findOne(getQuery(req.params.bookingId, req.user._id))
+      .populate('customerId', 'name email phone');
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -274,9 +275,9 @@ exports.getInvoice = async (req, res, next) => {
         invoiceNumber: `INV-${booking.bookingId}`,
         issuedAt: booking.updatedAt,
         customer: {
-          name: booking.customer.name,
-          email: booking.customer.email,
-          phone: booking.customer.phone,
+          name: booking.customerId.name,
+          email: booking.customerId.email,
+          phone: booking.customerId.phone,
         },
         service: booking.serviceType,
         technician: booking.technicianName,

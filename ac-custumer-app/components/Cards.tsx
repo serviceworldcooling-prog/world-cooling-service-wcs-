@@ -12,21 +12,36 @@ export const ServiceCard: React.FC<{ category: Category; onPress: () => void }> 
 
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
+      activeOpacity={0.95}
       onPress={onPress}
-      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderWidth: 1.5,
+          borderRadius: 12,
+          padding: 14,
+        }
+      ]}
     >
-      <View style={[styles.iconWrapper, { backgroundColor: colors.secondary + '20' }]}>
-        <IconHelper name={category.icon} color={colors.primary} size={28} />
-      </View>
+      {category.image ? (
+        <Image source={{ uri: category.image }} style={styles.cardImage} />
+      ) : (
+        <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '10' }]}>
+          <IconHelper name={category.icon} color={colors.primary} size={24} />
+        </View>
+      )}
       <View style={styles.cardDetails}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>{category.title}</Text>
-        <Text style={[styles.cardDesc, { color: colors.textSecondary }]} numberOfLines={2}>
+        <Text style={[styles.cardTitle, { color: colors.text, textTransform: 'uppercase', letterSpacing: 1, fontSize: 13, fontWeight: '800' }]}>
+          {category.title}
+        </Text>
+        <Text style={[styles.cardDesc, { color: colors.textSecondary, fontSize: 12, marginTop: 4, lineHeight: 16 }]} numberOfLines={2}>
           {category.description}
         </Text>
         <View style={styles.priceRow}>
-          <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>Starts from</Text>
-          <Text style={[styles.priceVal, { color: colors.primary }]}>${category.basePrice}</Text>
+          <Text style={[styles.priceLabel, { color: colors.textSecondary, fontSize: 11, letterSpacing: 0.5 }]}>ESTIMATED FROM</Text>
+          <Text style={[styles.priceVal, { color: colors.primary, fontSize: 14, fontWeight: '900' }]}>₹{category.basePrice}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -69,12 +84,22 @@ export const TechnicianCard: React.FC<{
   );
 };
 
+import { BASE_URL } from '../api/client';
+
 export const BookingCard: React.FC<{ booking: Booking; onPress: () => void }> = ({ booking, onPress }) => {
   const { themeMode } = useAppStore();
   const colors = themeMode === 'dark' ? Colors.dark : Colors.light;
 
+  const getAvatarUrl = (avatar: string) => {
+    if (!avatar) return '';
+    if (avatar.startsWith('http') || avatar.startsWith('data:')) return avatar;
+    const origin = BASE_URL.replace('/api/v1', '');
+    return `${origin}${avatar}`;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'Confirmed': return colors.error;
       case 'Upcoming': return colors.secondary;
       case 'Completed': return colors.success;
       case 'Cancelled': return colors.error;
@@ -82,31 +107,65 @@ export const BookingCard: React.FC<{ booking: Booking; onPress: () => void }> = 
     }
   };
 
+  const isAssigned = booking.technicianName && booking.technicianName !== 'Assigning...';
+
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
+      activeOpacity={0.95}
       onPress={onPress}
-      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.card,
+          borderColor: booking.isEmergency ? colors.error : colors.border,
+          borderWidth: 1.5,
+          borderRadius: 12,
+          padding: 14,
+        }
+      ]}
     >
       <View style={styles.bookingLeft}>
-        <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '15' }]}>
-          <Icons.Calendar color={colors.primary} size={24} />
+        <View style={[styles.iconWrapper, { backgroundColor: booking.isEmergency ? colors.error + '10' : colors.primary + '10' }]}>
+          <Icons.Calendar color={booking.isEmergency ? colors.error : colors.primary} size={22} />
         </View>
       </View>
       <View style={styles.cardDetails}>
+        {booking.isEmergency && (
+          <View style={styles.emergencyLabelRow}>
+            <Icons.Zap size={10} color={colors.error} fill={colors.error} />
+            <Text style={[styles.emergencyLabelText, { color: colors.error }]}>EMERGENCY DISPATCH</Text>
+          </View>
+        )}
         <View style={styles.headerRow}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>{booking.categoryTitle}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(booking.status) + '15' }]}>
-            <Text style={[styles.statusText, { color: getStatusColor(booking.status) }]}>{booking.status}</Text>
+          <Text style={[styles.cardTitle, { color: colors.text, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 13, fontWeight: '800' }]}>
+            {booking.categoryTitle}
+          </Text>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(booking.status) + '12', borderColor: getStatusColor(booking.status) + '40', borderWidth: 1, borderRadius: 6, paddingVertical: 2, paddingHorizontal: 6 }]}>
+            <Text style={[styles.statusText, { color: getStatusColor(booking.status), fontSize: 9, letterSpacing: 0.5 }]}>
+              {booking.status.toUpperCase()}
+            </Text>
           </View>
         </View>
-        <Text style={[styles.cardDesc, { color: colors.textSecondary }]}>
-          📅 {booking.date} | ⏰ {booking.time}
+        <Text style={[styles.cardDesc, { color: colors.textSecondary, fontSize: 11, fontWeight: '600', marginTop: 4 }]}>
+          📅 {booking.date}  |  ⏰ {booking.time}
         </Text>
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        <View style={[styles.divider, { backgroundColor: colors.border, height: 1, marginVertical: 10 }]} />
         <View style={styles.headerRow}>
-          <Text style={[styles.jobsText, { color: colors.textSecondary }]}>Technician: {booking.technicianName}</Text>
-          <Text style={[styles.priceVal, { color: colors.primary, fontSize: 16 }]}>${booking.price.toFixed(2)}</Text>
+          {isAssigned ? (
+            <View style={styles.assignedTechRowCard}>
+              {booking.techAvatar ? (
+                <Image source={{ uri: getAvatarUrl(booking.techAvatar) }} style={styles.techAvatarMinCard} />
+              ) : (
+                <View style={[styles.techAvatarPlaceholderCard, { backgroundColor: colors.primary + '10' }]}>
+                  <Icons.User size={10} color={colors.primary} />
+                </View>
+              )}
+              <Text style={[styles.techNameMinCard, { color: colors.text }]}>{booking.technicianName}</Text>
+            </View>
+          ) : (
+            <Text style={[styles.jobsText, { color: colors.textSecondary, fontSize: 11, fontWeight: '700' }]}>⏳ PENDING...</Text>
+          )}
+          <Text style={[styles.priceVal, { color: colors.primary, fontSize: 14, fontWeight: '900' }]}>₹{booking.price.toFixed(2)}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -133,6 +192,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 16,
+  },
+  cardImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     marginRight: 16,
   },
   cardDetails: {
@@ -198,5 +263,39 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     marginVertical: 10,
-  }
+  },
+  assignedTechRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  techAvatarMinCard: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  techAvatarPlaceholderCard: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  techNameMinCard: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  emergencyLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 6,
+  },
+  emergencyLabelText: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
 });

@@ -17,6 +17,9 @@ router.post('/generate-end/:bookingId', restrictTo('technician'), ctrl.generateE
 // Customer: verify endOTP (technician told them)
 router.post('/verify-end',            restrictTo('customer'),   ctrl.verifyEndOtp);
 
+// Technician: verify endOTP (customer told them)
+router.post('/verify-end-tech',       restrictTo('technician'), ctrl.verifyEndOtpTech);
+
 // Admin: view OTP status for any booking
 router.get('/status/:bookingId',      restrictTo('admin'),      ctrl.getOtpStatus);
 

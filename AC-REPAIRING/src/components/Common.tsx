@@ -1,18 +1,113 @@
 import React from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  TouchableOpacity, 
-  View, 
-  TextInput, 
-  ActivityIndicator, 
-  SafeAreaView, 
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  TextInput,
+  ActivityIndicator,
+  SafeAreaView,
   StatusBar,
   ScrollView,
   Platform
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, ROUNDED, SPACING, SHADOWS } from '../constants/theme';
+
+// ─── Bottom Tab Bar ───────────────────────────────────────────────────────────
+interface BottomTabBarProps {
+  navigation: any;
+  activeRoute?: string; // 'AssignedJobs' | 'TechAdvisor' | 'EarningsDetails' | 'Profile'
+}
+
+export const BottomTabBar: React.FC<BottomTabBarProps> = ({ navigation, activeRoute }) => {
+  const insets = useSafeAreaInsets();
+
+  const tabs = [
+    { key: 'AssignedJobs', label: 'My Jobs', icon: 'assignment' as keyof typeof MaterialIcons.glyphMap },
+    { key: 'TechAdvisor', label: 'Advisor', icon: 'build' as keyof typeof MaterialIcons.glyphMap },
+    { key: 'EarningsDetails', label: 'Earnings', icon: 'account-balance-wallet' as keyof typeof MaterialIcons.glyphMap },
+    { key: 'Profile', label: 'More', icon: 'more-horiz' as keyof typeof MaterialIcons.glyphMap },
+  ];
+
+  const handleTabPress = (key: string) => {
+    try {
+      navigation.navigate('MainTabs', { screen: key });
+    } catch {
+      navigation.navigate(key as any);
+    }
+  };
+
+  return (
+    <View
+      style={[
+        tabBarStyles.container,
+        {
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          height: Platform.OS === 'ios' ? 88 : (insets.bottom > 0 ? 62 + insets.bottom : 64),
+        },
+      ]}
+    >
+      {tabs.map((tab) => {
+        const isActive = activeRoute === tab.key;
+        return (
+          <TouchableOpacity
+            key={tab.key}
+            style={tabBarStyles.tabItem}
+            onPress={() => handleTabPress(tab.key)}
+            activeOpacity={0.7}
+          >
+            {isActive && <View style={tabBarStyles.activeIndicator} />}
+            <MaterialIcons
+              name={tab.icon}
+              size={24}
+              color={isActive ? COLORS.secondary : COLORS.textLight}
+            />
+            <Text style={[tabBarStyles.tabLabel, isActive && tabBarStyles.tabLabelActive]}>
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+};
+
+const tabBarStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingTop: 8,
+    ...SHADOWS.small,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    top: -8,
+    width: 32,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: COLORS.secondary,
+  },
+  tabLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textLight,
+    marginTop: 2,
+  },
+  tabLabelActive: {
+    color: COLORS.secondary,
+    fontWeight: '700',
+  },
+});
 
 // Screen Container
 interface ContainerProps {
@@ -24,6 +119,8 @@ interface ContainerProps {
   loading?: boolean;
   noHeader?: boolean;
   backgroundColor?: string;
+  navigation?: any;
+  activeRoute?: string;
 }
 
 export const ScreenContainer: React.FC<ContainerProps> = ({
@@ -34,7 +131,9 @@ export const ScreenContainer: React.FC<ContainerProps> = ({
   scroll = false,
   loading = false,
   noHeader = false,
-  backgroundColor = COLORS.background
+  backgroundColor = COLORS.background,
+  navigation,
+  activeRoute,
 }) => {
   const content = loading ? (
     <View style={styles.center}>
@@ -47,7 +146,7 @@ export const ScreenContainer: React.FC<ContainerProps> = ({
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <StatusBar barStyle={Platform.OS === 'ios' ? 'dark-content' : 'light-content'} backgroundColor={COLORS.primary} />
-      
+
       {!noHeader && (
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -67,8 +166,8 @@ export const ScreenContainer: React.FC<ContainerProps> = ({
       )}
 
       {scroll ? (
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent} 
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -79,6 +178,8 @@ export const ScreenContainer: React.FC<ContainerProps> = ({
           {content}
         </View>
       )}
+
+      {navigation && <BottomTabBar navigation={navigation} activeRoute={activeRoute} />}
     </SafeAreaView>
   );
 };
@@ -135,11 +236,11 @@ export const AppButton: React.FC<ButtonProps> = ({
       ) : (
         <View style={styles.buttonContent}>
           {icon && (
-            <MaterialIcons 
-              name={icon as any} 
-              size={18} 
-              color={variant === 'outline' ? COLORS.primary : variant === 'secondary' ? COLORS.primary : '#fff'} 
-              style={{ marginRight: SPACING.xs }} 
+            <MaterialIcons
+              name={icon as any}
+              size={18}
+              color={variant === 'outline' ? COLORS.primary : variant === 'secondary' ? COLORS.primary : '#fff'}
+              style={{ marginRight: SPACING.xs }}
             />
           )}
           <Text style={[styles.btnText, txtStyle, textStyle]}>{title}</Text>
@@ -182,11 +283,11 @@ export const AppInput: React.FC<InputProps> = ({
       {label && <Text style={styles.inputLabel}>{label}</Text>}
       <View style={[styles.inputWrapper, error ? styles.inputWrapperError : null]}>
         {icon && (
-          <MaterialIcons 
-            name={icon as any} 
-            size={20} 
-            color={COLORS.textSecondary} 
-            style={{ marginRight: SPACING.sm }} 
+          <MaterialIcons
+            name={icon as any}
+            size={20}
+            color={COLORS.textSecondary}
+            style={{ marginRight: SPACING.sm }}
           />
         )}
         <TextInput
@@ -201,10 +302,10 @@ export const AppInput: React.FC<InputProps> = ({
         />
         {rightIcon && (
           <TouchableOpacity onPress={onRightIconPress} style={{ padding: SPACING.xs }}>
-            <MaterialIcons 
-              name={rightIcon as any} 
-              size={20} 
-              color={COLORS.textSecondary} 
+            <MaterialIcons
+              name={rightIcon as any}
+              size={20}
+              color={COLORS.textSecondary}
             />
           </TouchableOpacity>
         )}
@@ -213,6 +314,7 @@ export const AppInput: React.FC<InputProps> = ({
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -261,7 +363,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
+
   // Buttons
   button: {
     height: 48,

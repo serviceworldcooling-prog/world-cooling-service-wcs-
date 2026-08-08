@@ -20,6 +20,13 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'User not found' });
     }
 
+    if (!req.user.isActive || req.user.status === 'Banned' || req.user.status === 'Inactive') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been blocked. Please contact the administrator to unblock.',
+      });
+    }
+
     next();
   } catch (error) {
     return res.status(401).json({ success: false, message: 'Token invalid or expired' });

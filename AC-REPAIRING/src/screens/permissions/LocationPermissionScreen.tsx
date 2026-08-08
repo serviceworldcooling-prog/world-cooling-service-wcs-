@@ -1,143 +1,294 @@
-import React from 'react';
-import { StyleSheet, Text, View, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Alert, ImageBackground, StatusBar } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, ROUNDED, SPACING, SHADOWS } from '../../constants/theme';
 import { AppButton } from '../../components/Common';
+import * as Location from 'expo-location';
 
 export const LocationPermissionScreen = ({ navigation }: any) => {
-  const handleAllow = () => {
-    navigation.replace('NotificationPermission');
+  const [locationAllowed, setLocationAllowed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [address, setAddress] = useState('');
+
+  const handleLocationRequest = async () => {
+    setLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        try {
+          const [geocode] = await Location.reverseGeocodeAsync({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+          const addressString = `${geocode.name || geocode.street || ''}, ${geocode.city || ''}`.replace(/^,\s*|,\s*$/g, '');
+          setAddress(addressString || `${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)}`);
+        } catch (e) {
+          setAddress(`${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)}`);
+        }
+        setLocationAllowed(true);
+      } else {
+        Alert.alert("Permission Denied", "Location permission is required for dispatch. Please enable it in settings.");
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to get location");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSkip = () => {
+  const handleContinue = () => {
+    if (!locationAllowed) {
+      Alert.alert(
+        '📍 Permission Required',
+        'You must allow Location access before continuing. Tap the ALLOW button above.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     navigation.replace('NotificationPermission');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.illustrationBox}>
-          <View style={styles.circleBg}>
-            <MaterialIcons name="my-location" size={64} color={COLORS.secondary} />
+    <ImageBackground
+      source={require('../../../assets/permissions_location_bg.png')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <View style={styles.overlay} />
+      
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>APP ACCESS</Text>
+        </View>
+
+        <View style={styles.content}>
+          {/* Top Decorative Shield */}
+          <View style={styles.shieldIconWrapper}>
+            <MaterialIcons name="security" size={48} color={COLORS.primary} />
           </View>
-          <View style={styles.pinMini}>
-            <MaterialIcons name="pin-drop" size={24} color={COLORS.primary} />
+
+          {/* Heading Section */}
+          <View style={styles.titleSection}>
+            <Text style={styles.brandText}>SECURITY & TRUST</Text>
+            <Text style={styles.title}>Location Access</Text>
+            <View style={styles.headerDivider} />
+            <Text style={styles.subtitle}>
+              Enable location services to receive assigned service bookings nearby and get precise route guidance.
+            </Text>
+          </View>
+
+          {/* Light Glassmorphic Location Service Card */}
+          <View style={styles.glassCard}>
+            <View style={styles.row}>
+              <View style={styles.textCol}>
+                <Text style={styles.cardTitle}>📍 Location Service</Text>
+                <Text style={styles.cardDesc}>
+                  Used to dispatch local AC repair requests and navigate you directly to customers.
+                </Text>
+                {locationAllowed && address && (
+                  <View style={styles.locationInfo}>
+                    <Text style={styles.locationAddrText}>
+                      🏠 Current: {address}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {locationAllowed ? (
+                <View style={styles.allowedHighlightBadge}>
+                  <Text style={styles.allowedHighlightText}>ALLOWED</Text>
+                </View>
+              ) : (
+                <TouchableOpacity 
+                  style={[styles.allowBtn, { backgroundColor: COLORS.primary }]} 
+                  onPress={handleLocationRequest}
+                  disabled={loading}
+                >
+                  <Text style={styles.allowBtnText}>{loading ? '...' : 'ALLOW'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
 
-        <Text style={styles.title}>Enable Location Services</Text>
-        <Text style={styles.description}>
-          To book an AC technician, we need to know where you are. This allows us to find the closest certified technician, show accurate arrival estimates, and guide them directly to your home.
-        </Text>
-
-        <View style={styles.privacyCard}>
-          <MaterialIcons name="security" size={20} color={COLORS.success} />
-          <Text style={styles.privacyText}>
-            Your location data is encrypted and only shared with the assigned technician during active service.
-          </Text>
+        <View style={styles.footer}>
+          <AppButton
+            title={locationAllowed ? 'CONTINUE →' : 'ALLOW TO CONTINUE'}
+            onPress={handleContinue}
+            style={[
+              styles.actionBtn,
+              !locationAllowed && styles.actionBtnDisabled
+            ]}
+            disabled={false}
+          />
         </View>
-      </View>
-
-      <View style={styles.footer}>
-        <AppButton
-          title="Allow Location Access"
-          onPress={handleAllow}
-          icon="near-me"
-          style={styles.primaryBtn}
-        />
-        <AppButton
-          title="Not Now"
-          onPress={handleSkip}
-          variant="outline"
-          style={styles.secondaryBtn}
-        />
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.70)', // Light clean theme overlay
+  },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
     justifyContent: 'space-between',
-    padding: SPACING.lg,
+  },
+  header: {
+    alignItems: 'center',
+    paddingTop: 48,
+    paddingBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 2,
+    color: COLORS.textPrimary,
   },
   content: {
     flex: 1,
+    paddingHorizontal: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
   },
-  illustrationBox: {
-    position: 'relative',
-    marginBottom: SPACING.xl,
-  },
-  circleBg: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+  shieldIconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.medium,
-  },
-  pinMini: {
-    position: 'absolute',
-    bottom: 5,
-    right: 5,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.secondaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: COLORS.surface,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     ...SHADOWS.small,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.primary,
-    textAlign: 'center',
-    marginBottom: SPACING.md,
+  titleSection: {
+    alignItems: 'center',
+    marginBottom: 32,
+    paddingHorizontal: 8,
   },
-  description: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
+  brandText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 3,
+    color: COLORS.primary,
+    marginBottom: 6,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '900',
+    textAlign: 'center',
+    letterSpacing: 0.2,
+    color: COLORS.textPrimary,
+  },
+  headerDivider: {
+    width: 32,
+    height: 2,
+    backgroundColor: COLORS.primary + '30',
+    marginVertical: 12,
+    borderRadius: 1,
+  },
+  subtitle: {
+    fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: SPACING.xl,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    letterSpacing: 0.1,
   },
-  privacyCard: {
+  glassCard: {
+    width: '100%',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 20,
+    backgroundColor: '#ffffff', // High readability light card
+    ...SHADOWS.medium,
+  },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.successLight,
-    padding: SPACING.md,
-    borderRadius: ROUNDED.md,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
-    borderWidth: 1,
-    width: '100%',
+    justifyContent: 'space-between',
   },
-  privacyText: {
+  textCol: {
     flex: 1,
-    fontSize: 12,
+    marginRight: 16,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 6,
     color: COLORS.textPrimary,
-    marginLeft: SPACING.sm,
-    lineHeight: 16,
+  },
+  cardDesc: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORS.textSecondary,
     fontWeight: '500',
   },
   footer: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    paddingTop: 8,
+  },
+  allowedHighlightBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  allowedHighlightText: {
+    color: '#10B981',
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
+  allowBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  allowBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
+  locationInfo: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  locationAddrText: {
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
+    color: COLORS.textPrimary,
+  },
+  actionBtn: {
     width: '100%',
-  },
-  primaryBtn: {
+    height: 52,
     backgroundColor: COLORS.primary,
-    height: 52,
-    marginBottom: SPACING.sm,
+    borderRadius: ROUNDED.md,
   },
-  secondaryBtn: {
-    height: 52,
-    borderColor: COLORS.primary,
+  actionBtnDisabled: {
+    backgroundColor: COLORS.border,
   },
 });

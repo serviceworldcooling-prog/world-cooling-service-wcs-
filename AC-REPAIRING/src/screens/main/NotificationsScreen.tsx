@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, StatusBar, Alert, LayoutAnimation, Platform } from 'react-native';
+import { MaterialIcons, Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, ROUNDED, SPACING, SHADOWS } from '../../constants/theme';
-import { ScreenContainer } from '../../components/Common';
 import { useApp } from '../../context/AppContext';
+import { BottomTabBar } from '../../components/Common';
 
 // Relative time helper
 const formatTime = (dateStr: string): string => {
@@ -19,17 +20,43 @@ const formatTime = (dateStr: string): string => {
 
 export const NotificationsScreen = ({ navigation }: any) => {
   const {
+    user,
     notifications,
     notifLoading,
     unreadCount,
     loadNotifications,
     markNotificationRead,
     clearNotifications,
+    updateTechStatus,
   } = useApp();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     loadNotifications();
   }, []);
+
+  const handleStatusChange = async (newStatus: 'Available' | 'On Job' | 'Off Duty') => {
+    try {
+      await updateTechStatus(newStatus);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      Alert.alert('Status Updated', `Your status has been updated to "${newStatus}"`);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not update status.');
+    }
+  };
+
+  const showStatusOptions = () => {
+    Alert.alert(
+      'Update Duty Status',
+      'Select your current status:',
+      [
+        { text: '🟢 Available', onPress: () => handleStatusChange('Available') },
+        { text: '🟡 On Job', onPress: () => handleStatusChange('On Job') },
+        { text: '🔴 Off Duty', onPress: () => handleStatusChange('Off Duty') },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
 
   const handleClear = () => {
     clearNotifications();
@@ -39,18 +66,49 @@ export const NotificationsScreen = ({ navigation }: any) => {
     markNotificationRead(id);
   };
 
-  const headerRight = notifications.length > 0 ? (
-    <TouchableOpacity onPress={handleClear}>
-      <Text style={styles.clearText}>Mark All Read</Text>
-    </TouchableOpacity>
-  ) : null;
-
   return (
-    <ScreenContainer
-      title="Notifications"
-      onBack={() => navigation.goBack()}
-      headerRight={headerRight}
-    >
+    <View style={[styles.container, { backgroundColor: '#FAF9F6' }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* Header exactly matching Dashboard style */}
+      <View style={[styles.header, { paddingTop: Math.max(12, insets.top) }]}>
+        <View style={styles.headerLeftContainer}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <MaterialIcons name="arrow-back" size={22} color={COLORS.primary} />
+          </TouchableOpacity>
+          <Text style={[styles.logoText, { color: COLORS.primary }]}>W  C  S</Text>
+          <View style={[styles.headerDividerVertical, { backgroundColor: COLORS.border }]} />
+          
+          <TouchableOpacity 
+            style={styles.headerDutyStatus}
+            onPress={showStatusOptions}
+            activeOpacity={0.8}
+          >
+            <Text style={dutyLabelStyle}>DUTY STATUS</Text>
+            <View style={styles.dutyRow}>
+              <View style={[
+                styles.dutyDotActive, 
+                { 
+                  backgroundColor: 
+                    user?.technicianStatus === 'Available' ? COLORS.success :
+                    user?.technicianStatus === 'On Job' ? '#EAB308' :
+                    COLORS.textLight 
+                }
+              ]} />
+              <Text style={styles.dutyText}>
+                {user?.technicianStatus || 'Offline'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {notifications.length > 0 && (
+          <TouchableOpacity onPress={handleClear} activeOpacity={0.7} style={styles.clearBtn}>
+            <Text style={styles.clearText}>Mark All Read</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
       {notifLoading ? (
         <View style={styles.emptyState}>
           <ActivityIndicator size="large" color={COLORS.primary} />
@@ -69,16 +127,18 @@ export const NotificationsScreen = ({ navigation }: any) => {
       ) : (
         <FlatList
           data={notifications}
-          // FIX: was item.id — API returns _id
           keyExtractor={(item) => item._id}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={styles.scroll}
           renderItem={({ item }) => (
             <TouchableOpacity
-              // FIX: was item.read — API field is isRead
-              style={[styles.card, item.isRead ? styles.cardRead : styles.cardUnread]}
+              style={[
+                styles.card, 
+                item.isRead ? styles.cardRead : styles.cardUnread,
+                { borderWidth: 1.5 }
+              ]}
               onPress={() => handleNotifPress(item._id)}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
               <View style={styles.iconCircle}>
                 <MaterialIcons
@@ -90,37 +150,107 @@ export const NotificationsScreen = ({ navigation }: any) => {
                       : 'notifications'
                   }
                   size={20}
-                  // FIX: was item.read — API field is isRead
                   color={item.isRead ? COLORS.textSecondary : COLORS.secondary}
                 />
               </View>
               <View style={styles.contentCol}>
                 <View style={styles.titleRow}>
-                  {/* FIX: was item.read — API field is isRead */}
-                  <Text style={[styles.title, item.isRead ? styles.textRead : styles.textUnread]}>
+                  <Text style={[styles.title, item.isRead ? styles.textRead : styles.textUnread]} numberOfLines={1}>
                     {item.title}
                   </Text>
-                  {/* FIX: was item.time — API field is createdAt */}
                   <Text style={styles.time}>{formatTime(item.createdAt)}</Text>
                 </View>
-                {/* FIX: was item.body — API field is message */}
                 <Text style={styles.body}>{item.message}</Text>
               </View>
             </TouchableOpacity>
           )}
         />
       )}
-    </ScreenContainer>
+      <BottomTabBar navigation={navigation} />
+    </View>
   );
 };
 
+const dutyLabelStyle = {
+  fontSize: 8,
+  fontWeight: '900' as const,
+  letterSpacing: 1.5,
+  color: COLORS.textSecondary,
+};
+
 const styles = StyleSheet.create({
-  listContent: { paddingBottom: 20 },
-  clearText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.secondary,
+  container: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1.5,
+    borderBottomColor: 'rgba(11, 30, 63, 0.1)',
+    backgroundColor: '#FFFFFF',
+    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
+  headerLeftContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  backBtn: {
+    marginRight: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: {
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  headerDividerVertical: {
+    width: 1,
+    height: 24,
+    marginHorizontal: 12,
+  },
+  headerDutyStatus: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  dutyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  dutyDotActive: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 4,
+  },
+  dutyText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  clearBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderWidth: 1.5,
+    borderColor: COLORS.secondary,
+    borderRadius: ROUNDED.sm,
+    backgroundColor: '#ffffff',
+  },
+  clearText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textTransform: 'uppercase',
+  },
+  scroll: { padding: 16, paddingBottom: 100 },
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -128,15 +258,14 @@ const styles = StyleSheet.create({
     borderRadius: ROUNDED.md,
     marginBottom: SPACING.sm,
     ...SHADOWS.small,
-    borderWidth: 1,
   },
   cardRead: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#ffffff',
     borderColor: COLORS.border,
   },
   cardUnread: {
     backgroundColor: '#FAFDFD',
-    borderColor: COLORS.secondaryLight,
+    borderColor: COLORS.secondary + '30',
   },
   iconCircle: {
     width: 36,

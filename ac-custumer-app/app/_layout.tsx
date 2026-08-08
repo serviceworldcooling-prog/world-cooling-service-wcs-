@@ -4,6 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useAppStore } from '../store/useAppStore';
 import { ThemeProvider, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { Colors } from '../theme/colors';
+import { View } from 'react-native';
+import BottomTabBar from '../components/BottomTabBar';
 
 export default function RootLayout() {
   const { isAuthenticated, themeMode, initAuth } = useAppStore();
@@ -26,12 +28,32 @@ export default function RootLayout() {
 
     const inAuthGroup = segments[0] === '(auth)';
     
-    if (!isAuthenticated && !inAuthGroup) {
+    const segs = segments as string[];
+    const isPermissionPage = 
+      segs[1] === 'perm-location' ||
+      segs[1] === 'perm-camera' ||
+      segs[1] === 'perm-media' ||
+      segs[1] === 'perm-microphone' ||
+      segs[1] === 'permissions';
+
+    if (!isAuthenticated && isPermissionPage) {
+      const timer = setTimeout(() => {
+        router.replace('/(auth)/login');
+      }, 0);
+      return () => clearTimeout(timer);
+    } else if (!isAuthenticated && !inAuthGroup) {
       const timer = setTimeout(() => {
         router.replace('/(auth)/splash');
       }, 0);
       return () => clearTimeout(timer);
     } else if (isAuthenticated && inAuthGroup) {
+      if (
+        segs[1] === 'permissions' ||
+        segs[1] === 'perm-location' ||
+        segs[1] === 'perm-camera' ||
+        segs[1] === 'perm-media' ||
+        segs[1] === 'perm-microphone'
+      ) return;
       const timer = setTimeout(() => {
         router.replace('/(tabs)/home');
       }, 0);
@@ -54,13 +76,18 @@ export default function RootLayout() {
     },
   };
 
+  const showGlobalTabBar = isAuthenticated && segments[0] === 'screens';
+
   return (
     <ThemeProvider value={navTheme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
+      <View style={{ flex: 1 }}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
+        {showGlobalTabBar && <BottomTabBar />}
+      </View>
     </ThemeProvider>
   );
 }

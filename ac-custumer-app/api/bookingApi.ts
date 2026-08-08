@@ -1,6 +1,6 @@
 import apiClient from './client';
 
-export type BookingStatus = 'Pending' | 'Confirmed' | 'Upcoming' | 'Completed' | 'Cancelled';
+export type BookingStatus = 'Pending' | 'Confirmed' | 'Upcoming' | 'In Progress' | 'Completed' | 'Cancelled';
 
 export interface Booking {
   _id: string;
@@ -15,13 +15,20 @@ export interface Booking {
   isLiveLocation: boolean;
   technicianName: string;
   techAvatar: string;
+  technicianId?: any;
   status: BookingStatus;
   price: number;
+  finalPrice?: number;
   isPaid: boolean;
   paymentMethod: string | null;
   isEmergency: boolean;
   isOtpVerified: boolean;
   createdAt: string;
+  warrantyStatus?: 'Active' | 'None' | null;
+  warrantyPeriod?: string;
+  warrantyDetails?: string;
+  extraMaterialCharges?: number;
+  extraAmountTaken?: number;
 }
 
 export interface CreateBookingPayload {

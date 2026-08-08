@@ -1,155 +1,244 @@
-import React from 'react';
-import { StyleSheet, Text, View, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Alert, ImageBackground, StatusBar } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, ROUNDED, SPACING, SHADOWS } from '../../constants/theme';
 import { AppButton } from '../../components/Common';
 
 export const NotificationPermissionScreen = ({ navigation }: any) => {
-  const handleAllow = () => {
-    navigation.replace('MainTabs');
+  const [notifyAllowed, setNotifyAllowed] = useState(false);
+
+  const handleNotificationRequest = () => {
+    // Standard prompt simulated
+    setNotifyAllowed(true);
   };
 
-  const handleSkip = () => {
-    navigation.replace('MainTabs');
+  const handleContinue = () => {
+    if (!notifyAllowed) {
+      Alert.alert(
+        '🔔 Permission Required',
+        'You must allow Push Notifications before continuing. Tap the ALLOW button above.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    navigation.replace('CameraPermission');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.illustrationBox}>
-          <View style={styles.circleBg}>
-            <MaterialIcons name="notifications-active" size={64} color={COLORS.secondary} />
+    <ImageBackground
+      source={require('../../../assets/permissions_notification_bg.png')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <View style={styles.overlay} />
+      
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>APP ACCESS</Text>
+        </View>
+
+        <View style={styles.content}>
+          {/* Top Decorative Alert Icon */}
+          <View style={styles.alertIconWrapper}>
+            <MaterialIcons name="add-alert" size={48} color={COLORS.primary} />
           </View>
-          <View style={styles.badgeMini}>
-            <Text style={styles.badgeText}>1</Text>
+
+          {/* Heading Section */}
+          <View style={styles.titleSection}>
+            <Text style={styles.brandText}>REAL-TIME UPDATES</Text>
+            <Text style={styles.title}>Push Notifications</Text>
+            <View style={styles.headerDivider} />
+            <Text style={styles.subtitle}>
+              Enable push notifications to receive real-time notifications about new job assignments, customer chats, and schedule updates.
+            </Text>
+          </View>
+
+          {/* Light Glassmorphic Notification Card */}
+          <View style={styles.glassCard}>
+            <View style={styles.row}>
+              <View style={styles.textCol}>
+                <Text style={styles.cardTitle}>🔔 Alerts & Messages</Text>
+                <Text style={styles.cardDesc}>
+                  Never miss an urgent job assignment dispatch or a chat query from your assigned customer.
+                </Text>
+              </View>
+              {notifyAllowed ? (
+                <View style={styles.allowedHighlightBadge}>
+                  <Text style={styles.allowedHighlightText}>ALLOWED</Text>
+                </View>
+              ) : (
+                <TouchableOpacity style={[styles.allowBtn, { backgroundColor: COLORS.primary }]} onPress={handleNotificationRequest}>
+                  <Text style={styles.allowBtnText}>ALLOW</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
 
-        <Text style={styles.title}>Never Miss a Status Update</Text>
-        <Text style={styles.description}>
-          Enable push notifications to receive real-time notifications when:
-        </Text>
-
-        <View style={styles.featuresList}>
-          <View style={styles.featureItem}>
-            <MaterialIcons name="check-circle" size={20} color={COLORS.primary} style={{ marginRight: SPACING.sm }} />
-            <Text style={styles.featureText}>A technician is assigned to your job</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <MaterialIcons name="check-circle" size={20} color={COLORS.primary} style={{ marginRight: SPACING.sm }} />
-            <Text style={styles.featureText}>Technician starts travelling (GPS tracking active)</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <MaterialIcons name="check-circle" size={20} color={COLORS.primary} style={{ marginRight: SPACING.sm }} />
-            <Text style={styles.featureText}>Service is completed & your invoice is ready</Text>
-          </View>
+        <View style={styles.footer}>
+          <AppButton
+            title={notifyAllowed ? 'CONTINUE →' : 'ALLOW TO CONTINUE'}
+            onPress={handleContinue}
+            style={[
+              styles.actionBtn,
+              !notifyAllowed && styles.actionBtnDisabled
+            ]}
+            disabled={false}
+          />
         </View>
-      </View>
-
-      <View style={styles.footer}>
-        <AppButton
-          title="Enable Push Notifications"
-          onPress={handleAllow}
-          icon="notifications"
-          style={styles.primaryBtn}
-        />
-        <AppButton
-          title="Skip for Now"
-          onPress={handleSkip}
-          variant="outline"
-          style={styles.secondaryBtn}
-        />
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.70)', // Light clean theme overlay
+  },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
     justifyContent: 'space-between',
-    padding: SPACING.lg,
+  },
+  header: {
+    alignItems: 'center',
+    paddingTop: 48,
+    paddingBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 2,
+    color: COLORS.textPrimary,
   },
   content: {
     flex: 1,
+    paddingHorizontal: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
   },
-  illustrationBox: {
-    position: 'relative',
-    marginBottom: SPACING.xl,
-  },
-  circleBg: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+  alertIconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.medium,
-  },
-  badgeMini: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.danger,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: COLORS.surface,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     ...SHADOWS.small,
   },
-  badgeText: {
-    color: '#ffffff',
-    fontSize: 14,
+  titleSection: {
+    alignItems: 'center',
+    marginBottom: 32,
+    paddingHorizontal: 8,
+  },
+  brandText: {
+    fontSize: 11,
     fontWeight: '800',
+    letterSpacing: 3,
+    color: COLORS.primary,
+    marginBottom: 6,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.primary,
+    fontSize: 28,
+    fontWeight: '900',
     textAlign: 'center',
-    marginBottom: SPACING.md,
+    letterSpacing: 0.2,
+    color: COLORS.textPrimary,
   },
-  description: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
+  headerDivider: {
+    width: 32,
+    height: 2,
+    backgroundColor: COLORS.primary + '30',
+    marginVertical: 12,
+    borderRadius: 1,
+  },
+  subtitle: {
+    fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: SPACING.lg,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    letterSpacing: 0.1,
   },
-  featuresList: {
+  glassCard: {
     width: '100%',
-    backgroundColor: COLORS.surface,
-    padding: SPACING.md,
-    borderRadius: ROUNDED.md,
-    ...SHADOWS.small,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 20,
+    backgroundColor: '#ffffff', // High readability light card
+    ...SHADOWS.medium,
   },
-  featureItem: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: SPACING.xs,
+    justifyContent: 'space-between',
   },
-  featureText: {
-    fontSize: 14,
+  textCol: {
+    flex: 1,
+    marginRight: 16,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 6,
     color: COLORS.textPrimary,
+  },
+  cardDesc: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORS.textSecondary,
     fontWeight: '500',
   },
   footer: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    paddingTop: 8,
+  },
+  allowedHighlightBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  allowedHighlightText: {
+    color: '#10B981',
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
+  allowBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  allowBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
+  actionBtn: {
     width: '100%',
-  },
-  primaryBtn: {
+    height: 52,
     backgroundColor: COLORS.primary,
-    height: 52,
-    marginBottom: SPACING.sm,
+    borderRadius: ROUNDED.md,
   },
-  secondaryBtn: {
-    height: 52,
-    borderColor: COLORS.primary,
+  actionBtnDisabled: {
+    backgroundColor: COLORS.border,
   },
 });

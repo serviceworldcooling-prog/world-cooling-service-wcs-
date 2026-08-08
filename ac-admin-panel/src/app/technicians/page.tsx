@@ -11,7 +11,7 @@ import {
   deleteTechnician, uploadTechnicianAvatar,
 } from '@/lib/api';
 import {
-  Wrench, UserCheck, Briefcase, CheckCircle2, DollarSign,
+  Wrench, UserCheck, Briefcase, CheckCircle2, IndianRupee,
   Plus, Eye, Pencil, Trash2, Mail, Phone, MapPin,
   Award, CalendarDays, Star, AlertTriangle, RefreshCw, Loader2,
   Camera, Upload, X as XIcon, User,
@@ -28,6 +28,59 @@ const emptyForm = () => ({
   specialty: 'AC Technician', city: '', certifications: [] as string[],
   technicianStatus: 'Available',
 });
+
+function TechAvatar({ technician, size = 'md', className = '' }: { technician: any; size?: 'sm' | 'md' | 'lg'; className?: string }) {
+  const [imgError, setImgError] = useState(false);
+  const name = technician?.name || technician?.technicianName || 'Technician';
+  const initial = (name.trim()?.[0] || 'T').toUpperCase();
+  const pic = technician?.avatar || technician?.profilePic || technician?.photo || technician?.image || technician?.techAvatar;
+
+  const isDummyPic = !pic ||
+    typeof pic !== 'string' ||
+    !pic.trim() ||
+    pic.includes('unsplash.com') ||
+    pic.includes('placeholder') ||
+    pic.includes('dummy');
+
+  if (!isDummyPic && !imgError) {
+    return (
+      <img
+        src={pic}
+        alt={name}
+        onError={() => setImgError(true)}
+        className={
+          size === 'lg'
+            ? `w-16 h-16 rounded-2xl object-cover border-2 border-white/40 shadow-lg shrink-0 ${className}`
+            : size === 'sm'
+            ? `w-9 h-9 rounded-xl object-cover border border-slate-200 shrink-0 ${className}`
+            : `w-11 h-11 rounded-2xl object-cover border border-slate-200 shrink-0 ${className}`
+        }
+      />
+    );
+  }
+
+  if (size === 'lg') {
+    return (
+      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center text-slate-950 font-900 text-2xl shadow-lg shrink-0 ${className}`}>
+        {initial}
+      </div>
+    );
+  }
+
+  if (size === 'sm') {
+    return (
+      <div className={`w-9 h-9 rounded-xl bg-gradient-to-tr from-primary-700 to-primary-500 flex items-center justify-center text-white font-800 text-xs shrink-0 ${className}`}>
+        {initial}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-700 to-teal-500 flex items-center justify-center text-white font-800 text-sm shrink-0 ${className}`}>
+      {initial}
+    </div>
+  );
+}
 
 export default function TechniciansPage() {
   const { success, error: toastError } = useToast();
@@ -142,29 +195,54 @@ export default function TechniciansPage() {
   };
 
   return (
-    <DashboardLayout title="Technicians" subtitle="Manage field technicians and assignments">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <DashboardLayout title="Technicians" subtitle="Manage field engineers, availability and job assignments">
+      
+      {/* ── Top Telemetry Stat Cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-5 sm:mb-6">
         {[
-          { label: 'Total',      value: technicians.length, icon: Wrench,        color: 'text-primary-700', bg: 'bg-primary-50' },
+          { label: 'Total Techs', value: technicians.length, icon: Wrench,        color: 'text-primary-700', bg: 'bg-primary-50' },
           { label: 'Available',  value: available,          icon: UserCheck,      color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { label: 'On Job',     value: onJob,              icon: Briefcase,      color: 'text-blue-600',    bg: 'bg-blue-50' },
           { label: 'Jobs Done',  value: totalJobs,          icon: CheckCircle2,   color: 'text-violet-600',  bg: 'bg-violet-50' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-card flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center shrink-0`}><Icon size={18} className={color} /></div>
-            <div><p className="text-xs font-600 text-slate-500">{label}</p><p className="text-xl font-800 text-slate-900">{value}</p></div>
+          <div key={label} className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/70 shadow-card flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
+              <Icon size={18} className={color} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs font-600 text-slate-500 truncate">{label}</p>
+              <p className="text-lg sm:text-xl font-800 text-slate-900 leading-tight truncate">{value}</p>
+            </div>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-card overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100">
-          <SearchFilter searchValue={search} onSearch={setSearch} placeholder="Search name, specialty, city…"
-            filterOptions={STATUS_OPTIONS} filterValue={filter} onFilter={setFilter} filterLabel="Status"
+      {/* ── Main Container: Touched Left and Right on Mobile ── */}
+      <div className="-mx-4 sm:mx-0 rounded-none sm:rounded-2xl bg-white border-y sm:border border-slate-200/70 shadow-card overflow-hidden">
+        
+        {/* Search & Actions Toolbar */}
+        <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50/50">
+          <SearchFilter 
+            searchValue={search} 
+            onSearch={setSearch} 
+            placeholder="Search name, specialty, city…"
+            filterOptions={STATUS_OPTIONS} 
+            filterValue={filter} 
+            onFilter={setFilter} 
+            filterLabel="Status"
             rightSlot={
-              <div className="flex gap-2">
-                <button className="btn-secondary" onClick={load}><RefreshCw size={14} /></button>
-                <button className="btn-primary whitespace-nowrap" onClick={() => { setForm(emptyForm()); setCertInput(''); setAddOpen(true); }}>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button 
+                  className="btn-secondary py-2 px-3 text-xs gap-1.5 shrink-0 rounded-xl" 
+                  onClick={load} 
+                  title="Refresh Roster"
+                >
+                  <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                </button>
+                <button 
+                  className="btn-primary py-2 px-3.5 text-xs font-700 rounded-xl whitespace-nowrap flex-1 sm:flex-initial justify-center shadow-sm" 
+                  onClick={() => { setForm(emptyForm()); setCertInput(''); setAddOpen(true); }}
+                >
                   <Plus size={15} /> Add Technician
                 </button>
               </div>
@@ -172,49 +250,219 @@ export default function TechniciansPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-5">
+        {/* ── Desktop Table View (Hidden on Mobile) ── */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full min-w-[850px]">
+            <thead>
+              <tr className="bg-slate-50/80 border-b border-slate-100">
+                {['Technician', 'Contact Details', 'City', 'Rating', 'Jobs Done', 'Earnings', 'Status', 'Actions'].map(h => (
+                  <th key={h} className="px-5 py-3.5 text-[11px] font-800 text-slate-500 uppercase tracking-wider text-left whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="px-5 py-16 text-center">
+                    <Loader2 className="mx-auto animate-spin text-teal-600 mb-2" size={32} />
+                    <p className="text-xs text-slate-400">Loading technician telemetry…</p>
+                  </td>
+                </tr>
+              ) : technicians.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-5 py-16 text-center text-slate-400 text-sm">
+                    No technicians found
+                  </td>
+                </tr>
+              ) : technicians.map(t => (
+                <tr key={t._id} className="hover:bg-slate-50/80 transition-colors group">
+                  
+                  {/* Technician info */}
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="relative shrink-0">
+                        <TechAvatar technician={t} size="sm" />
+                        <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
+                          t.technicianStatus === 'Available' ? 'bg-emerald-500' :
+                          t.technicianStatus === 'On Job'    ? 'bg-blue-500 animate-pulse' : 'bg-slate-400'
+                        }`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-800 text-slate-900 group-hover:text-teal-700 transition-colors truncate">{t.name}</p>
+                        <p className="text-[11px] text-slate-400 font-500 truncate">{t.specialty || 'Senior AC Tech'}</p>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Contact */}
+                  <td className="px-5 py-4">
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-600 text-slate-700 flex items-center gap-1.5 truncate">
+                        <Mail size={12} className="text-slate-400 shrink-0" />
+                        <span className="truncate">{t.email}</span>
+                      </p>
+                      <p className="text-[11px] font-500 text-slate-400 flex items-center gap-1.5">
+                        <Phone size={11} className="text-slate-400 shrink-0" />
+                        <span>{t.phone}</span>
+                      </p>
+                    </div>
+                  </td>
+
+                  {/* City */}
+                  <td className="px-5 py-4">
+                    <span className="inline-flex items-center gap-1 text-xs font-600 text-slate-600 bg-slate-100/80 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                      <MapPin size={11} className="text-slate-400 shrink-0" />
+                      {t.city || 'Delhi NCR'}
+                    </span>
+                  </td>
+
+                  {/* Rating */}
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-1 text-xs font-800 text-amber-600 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-lg w-fit">
+                      <Star size={12} fill="#F59E0B" className="text-amber-500" />
+                      <span>{t.rating ?? 4.9}</span>
+                    </div>
+                  </td>
+
+                  {/* Jobs Done */}
+                  <td className="px-5 py-4">
+                    <span className="text-xs font-800 text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg">
+                      {(t.completedJobs ?? 0).toLocaleString()}
+                    </span>
+                  </td>
+
+                  {/* Earnings */}
+                  <td className="px-5 py-4">
+                    <p className="text-xs font-800 text-slate-900">
+                      ₹{(t.earnings ?? 0).toLocaleString()}
+                    </p>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-5 py-4">
+                    <Badge variant={techStatusVariant(t.technicianStatus ?? 'Available')} label={t.technicianStatus ?? 'Available'} dot />
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => { setSelected(t); setViewOpen(true); }}
+                        title="View Profile"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-teal-700 hover:bg-teal-50 transition-all"
+                      >
+                        <Eye size={15} />
+                      </button>
+                      <button 
+                        onClick={() => { setSelected(t); setForm({ ...t }); setCertInput(''); setEditOpen(true); }}
+                        title="Edit Profile"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-all"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button 
+                        onClick={() => setDeleteId(t._id)}
+                        title="Delete"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── Mobile Card View (< md screens, Touched Edge-to-Edge) ── */}
+        <div className="block md:hidden divide-y divide-slate-100">
           {loading ? (
-            <div className="col-span-3 flex justify-center py-12"><Loader2 className="animate-spin text-slate-400" /></div>
+            <div className="px-4 py-16 text-center">
+              <Loader2 className="mx-auto animate-spin text-teal-600 mb-2" size={28} />
+              <p className="text-xs text-slate-400">Loading technicians…</p>
+            </div>
           ) : technicians.length === 0 ? (
-            <p className="col-span-3 text-center text-slate-400 py-12">No technicians found</p>
-          ) : technicians.map(t => (
-            <div key={t._id} className="rounded-2xl border border-slate-100 p-5 hover:shadow-card-hover transition-all bg-white">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    {t.avatar
-                      ? <img src={t.avatar} alt={t.name} className="w-12 h-12 rounded-full object-cover border-2 border-primary-100" />
-                      : <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-800 text-lg">{t.name[0]}</div>
-                    }
-                    <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${t.technicianStatus === 'Available' ? 'bg-emerald-500' : t.technicianStatus === 'On Job' ? 'bg-blue-500' : 'bg-slate-400'}`} />
+            <div className="px-4 py-16 text-center text-slate-400 text-sm">No technicians found</div>
+          ) : (
+            technicians.map(t => (
+              <div key={t._id} className="p-4 space-y-3 hover:bg-slate-50/60 transition-colors">
+                
+                {/* Header: Avatar, Name, Specialty & Status */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative shrink-0">
+                      <TechAvatar technician={t} size="md" />
+                      <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
+                        t.technicianStatus === 'Available' ? 'bg-emerald-500' :
+                        t.technicianStatus === 'On Job'    ? 'bg-blue-500 animate-pulse' : 'bg-slate-400'
+                      }`} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-800 text-slate-900 truncate">{t.name}</p>
+                      <p className="text-xs text-slate-400 truncate">{t.specialty || 'Senior AC Tech'}</p>
+                    </div>
+                  </div>
+                  <Badge variant={techStatusVariant(t.technicianStatus ?? 'Available')} label={t.technicianStatus ?? 'Available'} dot />
+                </div>
+
+                {/* Performance & Metrics Grid */}
+                <div className="grid grid-cols-3 gap-2 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 text-center">
+                  <div>
+                    <p className="text-[9px] font-700 text-slate-400 uppercase">Rating</p>
+                    <p className="text-xs font-800 text-amber-600 flex items-center justify-center gap-0.5 mt-0.5">
+                      <Star size={11} fill="#F59E0B" className="text-amber-500" /> {t.rating ?? 4.9}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm font-800 text-slate-900">{t.name}</p>
-                    <p className="text-xs text-slate-400">{t.specialty}</p>
+                    <p className="text-[9px] font-700 text-slate-400 uppercase">Jobs Done</p>
+                    <p className="text-xs font-800 text-slate-900 mt-0.5">{(t.completedJobs ?? 0).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-700 text-slate-400 uppercase">Earned</p>
+                    <p className="text-xs font-800 text-emerald-600 mt-0.5">₹{(t.earnings ?? 0).toLocaleString()}</p>
                   </div>
                 </div>
-                <Badge variant={techStatusVariant(t.technicianStatus ?? 'Available')} label={t.technicianStatus ?? 'Available'} dot />
-              </div>
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                {[
-                  { label: 'Rating',   value: t.rating ?? '—' },
-                  { label: 'Jobs',     value: (t.completedJobs ?? 0).toLocaleString() },
-                  { label: 'Earned',   value: `$${((t.earnings ?? 0) / 1000).toFixed(1)}k` },
-                ].map(s => (
-                  <div key={s.label} className="text-center p-2 rounded-xl bg-slate-50">
-                    <p className="text-sm font-800 text-slate-900">{s.value}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{s.label}</p>
+
+                {/* Contact & Location Info */}
+                <div className="flex items-center justify-between gap-2 text-xs text-slate-600 pt-0.5">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Phone size={12} className="text-slate-400 shrink-0" />
+                    <span>{t.phone}</span>
                   </div>
-                ))}
+                  <span className="inline-flex items-center gap-1 text-[10px] font-600 text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md shrink-0">
+                    <MapPin size={9} /> {t.city || 'Delhi NCR'}
+                  </span>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                  <button 
+                    onClick={() => { setSelected(t); setViewOpen(true); }}
+                    className="btn-secondary text-xs py-1 px-3 gap-1"
+                  >
+                    <Eye size={13} /> View
+                  </button>
+                  <button 
+                    onClick={() => { setSelected(t); setForm({ ...t }); setCertInput(''); setEditOpen(true); }}
+                    className="btn-primary text-xs py-1 px-3 gap-1"
+                  >
+                    <Pencil size={13} /> Edit
+                  </button>
+                  <button 
+                    onClick={() => setDeleteId(t._id)}
+                    className="bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-700 py-1 px-2.5 rounded-xl transition-all flex items-center gap-1"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1 text-xs text-slate-400 mb-4"><MapPin size={11} className="text-primary-600" /><span>{t.city || '—'}</span></div>
-              <div className="flex gap-2">
-                <button onClick={() => { setSelected(t); setViewOpen(true); }} className="btn-secondary flex-1 justify-center py-2 text-xs"><Eye size={13} /> View</button>
-                <button onClick={() => { setSelected(t); setForm({ ...t }); setCertInput(''); setEditOpen(true); }} className="btn-primary flex-1 justify-center py-2 text-xs"><Pencil size={13} /> Edit</button>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
+
       </div>
 
       {/* Hidden file input for avatar picker */}
@@ -274,14 +522,11 @@ export default function TechniciansPage() {
         {selected && (
           <div className="space-y-4">
             {/* Hero with avatar upload */}
-            <div className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-primary-700 to-primary-500 text-white">
+            <div className="flex items-center gap-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-primary-700 to-primary-500 text-white">
               <div className="relative group shrink-0">
-                {selected.avatar
-                  ? <img src={selected.avatar} alt={selected.name} className="w-16 h-16 rounded-full object-cover border-2 border-white/30" />
-                  : <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-white font-800 text-2xl">{selected.name[0]}</div>
-                }
+                <TechAvatar technician={selected} size="lg" />
                 {/* Upload overlay */}
-                <label className="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                <label className="absolute inset-0 rounded-2xl flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                   {avatarUploading
                     ? <Loader2 size={18} className="text-white animate-spin" />
                     : <Camera size={18} className="text-white" />
@@ -305,40 +550,40 @@ export default function TechniciansPage() {
                     }}
                   />
                 </label>
-                {/* Camera badge */}
                 <span className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-sm pointer-events-none">
                   <Camera size={12} className="text-primary-700" />
                 </span>
               </div>
-              <div className="flex-1">
-                <p className="text-xl font-800">{selected.name}</p>
-                <p className="text-sm text-primary-200">{selected.specialty}</p>
-                <p className="text-xs text-primary-300 mt-1">Hover photo to change</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-base sm:text-xl font-800 truncate">{selected.name}</p>
+                <p className="text-xs sm:text-sm text-primary-200 truncate">{selected.specialty}</p>
+                <p className="text-[10px] text-primary-300 mt-1">Hover photo to change</p>
               </div>
               <Badge variant={techStatusVariant(selected.technicianStatus ?? 'Available')} label={selected.technicianStatus ?? 'Available'} dot />
             </div>
+
             {[
               { icon: Mail, label: 'Email',  value: selected.email },
               { icon: Phone, label: 'Phone', value: selected.phone },
               { icon: MapPin, label: 'City', value: selected.city || '—' },
-              { icon: CalendarDays, label: 'Joined', value: new Date(selected.createdAt).toLocaleDateString() },
+              { icon: CalendarDays, label: 'Joined', value: new Date(selected.createdAt ?? Date.now()).toLocaleDateString() },
               { icon: CheckCircle2, label: 'Jobs Done', value: selected.completedJobs ?? 0 },
-              { icon: DollarSign, label: 'Earnings', value: `₹${(selected.earnings ?? 0).toLocaleString()}` },
+              { icon: IndianRupee, label: 'Earnings', value: `₹${(selected.earnings ?? 0).toLocaleString()}` },
             ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-100">
+              <div key={label} className="flex items-center gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-slate-50 border border-slate-100">
                 <Icon size={14} className="text-primary-600 shrink-0" />
                 <span className="text-xs font-700 text-slate-400 w-20 shrink-0">{label}</span>
-                <span className="text-sm font-600 text-slate-700">{String(value)}</span>
+                <span className="text-xs sm:text-sm font-600 text-slate-700 truncate flex-1 min-w-0">{String(value)}</span>
               </div>
             ))}
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-1">
               <button className="btn-primary flex-1 justify-center" onClick={() => {
                 setViewOpen(false);
                 setAvatarPreview(selected.avatar || '');
                 setForm({ ...selected });
                 setEditOpen(true);
               }}>
-                <Pencil size={14} /> Edit
+                <Pencil size={14} /> Edit Profile
               </button>
               <button className="btn-danger px-4" onClick={() => setDeleteId(selected._id)}><Trash2 size={14} /></button>
             </div>
@@ -348,9 +593,12 @@ export default function TechniciansPage() {
 
       {/* Delete Modal */}
       <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Delete Technician" size="sm">
-        <div className="text-center space-y-4">
-          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto"><AlertTriangle size={26} className="text-red-500" /></div>
-          <p className="text-sm font-700 text-slate-800">Delete this technician's account?</p>
+        <div className="text-center space-y-4 py-2">
+          <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto"><AlertTriangle size={26} className="text-red-500" /></div>
+          <div>
+            <p className="text-sm font-800 text-slate-900">Delete account?</p>
+            <p className="text-xs text-slate-400 mt-1">This will permanently remove the technician profile.</p>
+          </div>
           <div className="flex gap-3">
             <button className="btn-danger flex-1 justify-center" onClick={handleDelete}>Delete</button>
             <button className="btn-secondary flex-1 justify-center" onClick={() => setDeleteId(null)}>Cancel</button>
@@ -422,7 +670,7 @@ function TechForm({ form, setForm, certInput, setCertInput, addCert, removeCert,
 
       <div><label className="form-label">Full Name</label>
         <input className="input-field" value={form.name || ''} onChange={e => setForm((p: any) => ({ ...p, name: e.target.value }))} placeholder="John Doe" /></div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div><label className="form-label">Email</label>
           <input type="email" className="input-field" value={form.email || ''} onChange={e => setForm((p: any) => ({ ...p, email: e.target.value }))} placeholder="john@service.com" /></div>
         <div><label className="form-label">Phone</label>
@@ -432,7 +680,7 @@ function TechForm({ form, setForm, certInput, setCertInput, addCert, removeCert,
         <div><label className="form-label">Password</label>
           <input type="password" className="input-field" value={form.password || ''} onChange={e => setForm((p: any) => ({ ...p, password: e.target.value }))} placeholder="Min 6 characters" /></div>
       )}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div><label className="form-label">Specialty</label>
           <input className="input-field" value={form.specialty || ''} onChange={e => setForm((p: any) => ({ ...p, specialty: e.target.value }))} /></div>
         <div><label className="form-label">City</label>
@@ -446,7 +694,7 @@ function TechForm({ form, setForm, certInput, setCertInput, addCert, removeCert,
         <div className="flex gap-2 mb-2">
           <input className="input-field" value={certInput} onChange={e => setCertInput(e.target.value)} placeholder="e.g. EPA 608"
             onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCert())} />
-          <button type="button" className="btn-primary" onClick={addCert}>Add</button>
+          <button type="button" className="btn-primary shrink-0" onClick={addCert}>Add</button>
         </div>
         <div className="flex flex-wrap gap-2">
           {(form.certifications ?? []).map((c: string, i: number) => (

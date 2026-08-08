@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  StyleSheet, Text, View, TouchableOpacity, ScrollView,
+  SafeAreaView, KeyboardAvoidingView, Platform, Alert
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, ROUNDED, SPACING, SHADOWS } from '../../constants/theme';
 import { AppButton, AppInput } from '../../components/Common';
@@ -18,13 +21,18 @@ export const RegisterScreen = ({ navigation }: any) => {
     const newErrors: any = {};
     if (!name) newErrors.name = 'Full name is required';
     if (!mobile) newErrors.mobile = 'Mobile number is required';
-    if (!email) newErrors.email = 'Email address is required';
+    if (!email) {
+      newErrors.email = 'Email address is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
     if (!password) newErrors.password = 'Password is required';
     if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
     if (!termsAccepted) newErrors.terms = 'You must accept the terms and conditions';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      Alert.alert('Registration Error', 'Please fill all fields and accept the terms.');
       return;
     }
 
@@ -34,12 +42,16 @@ export const RegisterScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
+      {/* Soft Background Accents */}
+      <View style={[styles.bgCircleTop, { backgroundColor: COLORS.primary + '05' }]} />
+      <View style={[styles.bgCircleBottom, { backgroundColor: COLORS.primary + '03' }]} />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -57,7 +69,7 @@ export const RegisterScreen = ({ navigation }: any) => {
                 setName(text);
                 if (errors.name) setErrors((prev: any) => ({ ...prev, name: undefined }));
               }}
-              placeholder="John Doe"
+              placeholder="Enter your full name"
               icon="person-outline"
               error={errors.name}
             />
@@ -69,7 +81,7 @@ export const RegisterScreen = ({ navigation }: any) => {
                 setMobile(text);
                 if (errors.mobile) setErrors((prev: any) => ({ ...prev, mobile: undefined }));
               }}
-              placeholder="9876543210"
+              placeholder="Enter mobile number"
               keyboardType="phone-pad"
               icon="phone-iphone"
               error={errors.mobile}
@@ -141,9 +153,8 @@ export const RegisterScreen = ({ navigation }: any) => {
 
             {/* Register Button */}
             <AppButton
-              title="Register Now"
+              title="REGISTER NOW"
               onPress={handleRegister}
-              icon="person-add"
               style={styles.registerBtn}
             />
           </View>
@@ -164,16 +175,32 @@ export const RegisterScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
-  scrollContent: {
+  bgCircleTop: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    top: -50,
+    right: -50,
+  },
+  bgCircleBottom: {
+    position: 'absolute',
+    width: 400,
+    height: 400,
+    borderRadius: 200,
+    bottom: -100,
+    left: -100,
+  },
+  scroll: {
     flexGrow: 1,
-    padding: SPACING.lg,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
     paddingTop: Platform.OS === 'ios' ? 0 : SPACING.sm,
   },
   backBtn: {
@@ -187,7 +214,7 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
   },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#ffffff',
     borderRadius: ROUNDED.lg,
     padding: SPACING.md,
     elevation: 3,
@@ -195,6 +222,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
     shadowRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -218,7 +247,8 @@ const styles = StyleSheet.create({
   },
   registerBtn: {
     backgroundColor: COLORS.primary,
-    height: 50,
+    height: 52,
+    borderRadius: ROUNDED.md,
   },
   loginRow: {
     flexDirection: 'row',

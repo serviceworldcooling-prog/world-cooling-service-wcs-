@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { protect, restrictTo } = require('../middleware/authMiddleware');
-const { getServices, getCategories, getServiceById, createService, updateService, deleteService } = require('../controllers/serviceController');
+const { getServices, getCategories, getServiceById, createService, updateService, deleteService, getPublicTechnicians } = require('../controllers/serviceController');
 
 // Public routes — no auth needed to browse services
 router.get('/', getServices);
 router.get('/categories', getCategories);
+router.get('/technicians', getPublicTechnicians);
 router.get('/:id', getServiceById);
 
 // Admin routes for service management

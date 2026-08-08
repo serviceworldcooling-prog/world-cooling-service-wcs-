@@ -52,14 +52,22 @@ export default function TabsLayout() {
         name="notifications" 
         options={{
           title: 'Alerts',
-          tabBarIcon: ({ color }) => <Icons.Bell size={22} color={color} />
+          href: null,
         }} 
       />
       <Tabs.Screen 
         name="profile" 
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <Icons.User size={22} color={color} />
+          tabBarIcon: ({ color }) => <Icons.User size={22} color={color} />,
+          href: null,
+        }} 
+      />
+      <Tabs.Screen 
+        name="more" 
+        options={{
+          title: 'More',
+          tabBarIcon: ({ color }) => <Icons.LayoutGrid size={22} color={color} />,
         }} 
       />
     </Tabs>

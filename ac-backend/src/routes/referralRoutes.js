@@ -4,8 +4,10 @@ const ctrl    = require('../controllers/referralController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 router.use(protect);
-router.get('/my',           restrictTo('customer'), ctrl.getMyReferrals);
-router.post('/complete',    restrictTo('admin'),    ctrl.completeReferral);
-router.get('/',             restrictTo('admin'),    ctrl.getAllReferrals);
+
+router.get('/my',                      restrictTo('customer'), ctrl.getMyReferrals);
+router.post('/apply-code',              restrictTo('customer'), ctrl.applyReferralCode);
+router.post('/claim-free-service',      restrictTo('customer'), ctrl.claimFreeServiceVoucher);
+router.get('/',                        restrictTo('admin'),    ctrl.getAllReferrals);
 
 module.exports = router;

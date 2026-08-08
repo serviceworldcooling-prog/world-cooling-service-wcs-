@@ -27,6 +27,14 @@ export interface Job {
     phone: string;
     avatar: string;
   };
+  extraMaterialCharges?: number;
+  extraAmountTaken?: number;
+  warrantyStatus?: 'Active' | 'None' | null;
+  warrantyPeriod?: string;
+  warrantyDetails?: string;
+  acNo?: string;
+  modelNo?: string;
+  warrantyReason?: string;
   createdAt: string;
 }
 
@@ -52,6 +60,12 @@ export const acceptJob = async (bookingId: string): Promise<Job> => {
 // PUT /api/v1/technicians/jobs/:bookingId/start
 export const startJob = async (bookingId: string): Promise<Job> => {
   const { data } = await api.put(`/technicians/jobs/${bookingId}/start`);
+  return data.booking;
+};
+
+// PUT /api/v1/technicians/jobs/:bookingId/share-location
+export const shareLocation = async (bookingId: string, coords?: { lat: number; lng: number }): Promise<Job> => {
+  const { data } = await api.put(`/technicians/jobs/${bookingId}/share-location`, coords);
   return data.booking;
 };
 

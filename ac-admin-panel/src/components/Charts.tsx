@@ -30,7 +30,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
         <Tooltip
           contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '12px', fontSize: '12px', boxShadow: '0 4px 20px rgba(15,23,42,0.08)' }}
           formatter={(value: number, name: string) => [
-            name === 'revenue' ? `$${value.toLocaleString()}` : value,
+            name === 'revenue' ? `₹${value.toLocaleString()}` : value,
             name === 'revenue' ? 'Revenue' : 'Bookings'
           ]}
         />

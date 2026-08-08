@@ -29,10 +29,26 @@ const workReportSchema = new mongoose.Schema({
 
   // Photo URLs (uploaded separately or as base64 in dev)
   photos: [{ type: String }],
+  video: { type: String, default: '' },
+
+  // Warranty card details (Optional)
+  warrantyActive: { type: Boolean, default: false },
+  warrantyPeriod: { type: String, default: '' },
+  warrantyDetails: { type: String, default: '' },
+  acNo: { type: String, default: '' },
+  modelNo: { type: String, default: '' },
+  warrantyReason: { type: String, default: '' },
+  digitalSignature: { type: String, default: '' },
+  digitalStamp: { type: String, default: '' },
+
+  // Extra charges details (Optional)
+  extraMaterialCharges: { type: Number, default: 0 },
+  extraAmountTaken: { type: Number, default: 0 },
 
   // Admin review
   adminReviewed: { type: Boolean, default: false },
   adminApprovedAt: { type: Date, default: null },
+  otpVerified: { type: Boolean, default: false },
 
   submittedAt: { type: Date, default: Date.now },
 }, {

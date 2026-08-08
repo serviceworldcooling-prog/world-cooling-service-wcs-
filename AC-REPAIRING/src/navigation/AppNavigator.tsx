@@ -1,9 +1,10 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppProvider, useApp } from '../context/AppContext';
 import { COLORS, ROUNDED, SPACING } from '../constants/theme';
@@ -12,18 +13,22 @@ import { COLORS, ROUNDED, SPACING } from '../constants/theme';
 import { SplashScreen }          from '../screens/auth/SplashScreen';
 import { OnboardingScreen }       from '../screens/auth/OnboardingScreen';
 import { LoginScreen }            from '../screens/auth/LoginScreen';
-import { RegisterScreen }         from '../screens/auth/RegisterScreen';
 import { ForgotPasswordScreen }   from '../screens/auth/ForgotPasswordScreen';
 
 // ─── Permission Screens ────────────────────────────────────────────────────
 import { LocationPermissionScreen }     from '../screens/permissions/LocationPermissionScreen';
 import { NotificationPermissionScreen } from '../screens/permissions/NotificationPermissionScreen';
+import { CameraPermissionScreen }       from '../screens/permissions/CameraPermissionScreen';
+import { MediaPermissionScreen }        from '../screens/permissions/MediaPermissionScreen';
 
-// ─── Core Flow Screens (Tab) ───────────────────────────────────────────────
-// Main bottom tab screens — only what a serviceman needs
 import { AssignedJobsScreen }  from '../screens/main/AssignedJobsScreen';   // Home: jobs assigned by admin
 import { NotificationsScreen } from '../screens/main/NotificationsScreen';
 import { ProfileScreen }       from '../screens/main/ProfileScreen';
+import { TechAdvisorScreen }   from '../screens/main/TechAdvisorScreen';
+import { PartsRequestScreen }  from '../screens/main/PartsRequestScreen';
+import { EarningsDetailsScreen } from '../screens/main/EarningsDetailsScreen';
+import { SafetyChecklistScreen } from '../screens/main/SafetyChecklistScreen';
+import { FeedbackRatingsScreen } from '../screens/main/FeedbackRatingsScreen';
 
 // ─── Job Flow Screens ──────────────────────────────────────────────────────
 import { JobDetailsScreen }    from '../screens/booking/JobDetailsScreen';   // Accept / Start / Complete
@@ -50,13 +55,22 @@ type RootStackParamList = {
   Splash: undefined;
   Onboarding: undefined;
   Login: undefined;
-  Register: undefined;
   ForgotPassword: undefined;
   // Permissions
   LocationPermission: undefined;
   NotificationPermission: undefined;
+  CameraPermission: undefined;
+  MediaPermission: undefined;
   // Tabs
   MainTabs: undefined;
+  // Notifications
+  Notifications: undefined;
+  // Diagnostics Advisor Utility
+  TechAdvisor: undefined;
+  PartsRequest: undefined;
+  EarningsDetails: undefined;
+  SafetyChecklist: undefined;
+  FeedbackRatings: undefined;
   // Job Flow — core
   JobDetails: { job: any };
   WorkReport: { job: any };
@@ -76,7 +90,8 @@ type RootStackParamList = {
 
 type TabParamList = {
   AssignedJobs: undefined;
-  Notifications: undefined;
+  TechAdvisor: undefined;
+  EarningsDetails: undefined;
   Profile: undefined;
 };
 
@@ -101,9 +116,7 @@ function TabIcon({ name, color }: { name: keyof typeof MaterialIcons.glyphMap; c
 }
 
 function MainTabs() {
-  // FIX: was !n.read — correct field from TechNotification type is isRead
-  const { unreadCount } = useApp();
-
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -113,8 +126,9 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: '#ffffff',
           borderTopColor:  COLORS.border,
-          height: 60,
-          paddingBottom: 8,
+          height: Platform.OS === 'ios' ? 88 : (insets.bottom > 0 ? 62 + insets.bottom : 64),
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -131,20 +145,27 @@ function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="Notifications"
-        component={NotificationsScreen}
+        name="TechAdvisor"
+        component={TechAdvisorScreen}
         options={{
-          title: 'Alerts',
-          tabBarIcon: ({ color }) => <TabIcon name="notifications-none" color={color} />,
-          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          title: 'Advisor',
+          tabBarIcon: ({ color }) => <TabIcon name="build" color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="EarningsDetails"
+        component={EarningsDetailsScreen}
+        options={{
+          title: 'Earnings',
+          tabBarIcon: ({ color }) => <TabIcon name="account-balance-wallet" color={color} />,
         }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <TabIcon name="person-outline" color={color} />,
+          title: 'More',
+          tabBarIcon: ({ color }) => <TabIcon name="more-horiz" color={color} />,
         }}
       />
     </Tab.Navigator>
@@ -162,15 +183,22 @@ function AppContent() {
         <Stack.Screen name="Splash"              component={SplashScreen} />
         <Stack.Screen name="Onboarding"          component={OnboardingScreen} />
         <Stack.Screen name="Login"               component={LoginScreen} />
-        <Stack.Screen name="Register"            component={RegisterScreen} />
         <Stack.Screen name="ForgotPassword"      component={ForgotPasswordScreen} />
 
         {/* ── Permissions ── */}
         <Stack.Screen name="LocationPermission"     component={LocationPermissionScreen} />
         <Stack.Screen name="NotificationPermission" component={NotificationPermissionScreen} />
+        <Stack.Screen name="CameraPermission"       component={CameraPermissionScreen} />
+        <Stack.Screen name="MediaPermission"        component={MediaPermissionScreen} />
 
         {/* ── Main App ── */}
         <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="TechAdvisor" component={TechAdvisorScreen} />
+        <Stack.Screen name="PartsRequest" component={PartsRequestScreen} />
+        <Stack.Screen name="EarningsDetails" component={EarningsDetailsScreen} />
+        <Stack.Screen name="SafetyChecklist" component={SafetyChecklistScreen} />
+        <Stack.Screen name="FeedbackRatings" component={FeedbackRatingsScreen} />
 
         {/* ── Job Flow (Core) ── */}
         <Stack.Screen name="JobDetails"    component={JobDetailsScreen} />

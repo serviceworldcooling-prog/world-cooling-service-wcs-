@@ -21,6 +21,17 @@ const couponRoutes       = require('./routes/couponRoutes');
 const trackingRoutes     = require('./routes/trackingRoutes');
 const technicianRoutes = require('./routes/technicianRoutes');
 const adminRoutes      = require('./routes/adminRoutes');
+const serviceOtpRoutes   = require('./routes/serviceOtpRoutes');
+const offerRoutes        = require('./routes/offerRoutes');
+const reviewRoutes       = require('./routes/reviewRoutes');
+const walletRoutes       = require('./routes/walletRoutes');
+const referralRoutes     = require('./routes/referralRoutes');
+const rewardRoutes       = require('./routes/rewardRoutes');
+const warrantyRoutes     = require('./routes/warrantyRoutes');
+const quoteRoutes        = require('./routes/quoteRoutes');
+const workReportRoutes   = require('./routes/workReportRoutes');
+const productRoutes      = require('./routes/productRoutes');
+const workChecklistRoutes = require('./routes/workChecklistRoutes');
 
 // ── Connect DB ───────────────────────────────────────
 connectDB();
@@ -34,8 +45,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -44,7 +55,8 @@ if (process.env.NODE_ENV === 'development') {
 // Global rate limiter (per IP)
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 5000,
+  skip: (req) => process.env.NODE_ENV === 'development' || req.path.includes('/tracking'),
   message: { success: false, message: 'Too many requests from this IP. Try again later.' },
 }));
 
@@ -66,12 +78,24 @@ const registerRoutes = (prefix) => {
   app.use(`${prefix}/bookings`, bookingRoutes);
   app.use(`${prefix}/payments`, paymentRoutes);
   app.use(`${prefix}/amc`, amcRoutes);
+  app.use(`${prefix}/amc-plans`, amcRoutes);
   app.use(`${prefix}/notifications`, notificationRoutes);
   app.use(`${prefix}/complaints`, complaintRoutes);
   app.use(`${prefix}/coupons`, couponRoutes);
   app.use(`${prefix}/tracking`, trackingRoutes);
   app.use(`${prefix}/technicians`, technicianRoutes);
   app.use(`${prefix}/admin`, adminRoutes);
+  app.use(`${prefix}/service-otp`, serviceOtpRoutes);
+  app.use(`${prefix}/offers`, offerRoutes);
+  app.use(`${prefix}/reviews`, reviewRoutes);
+  app.use(`${prefix}/wallet`, walletRoutes);
+  app.use(`${prefix}/referrals`, referralRoutes);
+  app.use(`${prefix}/rewards`, rewardRoutes);
+  app.use(`${prefix}/warranty`, warrantyRoutes);
+  app.use(`${prefix}/quotes`, quoteRoutes);
+  app.use(`${prefix}/work-reports`, workReportRoutes);
+  app.use(`${prefix}/products`, productRoutes);
+  app.use(`${prefix}/work-checklist`, workChecklistRoutes);
 };
 
 registerRoutes('/api');

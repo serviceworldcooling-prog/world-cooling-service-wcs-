@@ -12,6 +12,10 @@ export const updateProfile = async (payload: {
   phone?: string;
   avatar?: string;
   city?: string;
+  state?: string;
+  address?: string;
+  pincode?: string;
+  specialty?: string;
   membership?: 'Standard' | 'Gold' | 'Platinum';
 }) => {
   const { data } = await api.put('/technicians/profile', payload);

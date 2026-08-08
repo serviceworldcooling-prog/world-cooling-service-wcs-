@@ -25,7 +25,14 @@ router.put(
   [
     body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
     body('phone').optional().trim().notEmpty().withMessage('Phone cannot be empty'),
-    body('avatar').optional().isURL().withMessage('Avatar must be a valid URL'),
+    body('avatar').optional().trim().notEmpty().withMessage('Avatar cannot be empty'),
+    body('city').optional().trim().notEmpty(),
+    body('state').optional().trim().notEmpty(),
+    body('pincode').optional().trim().notEmpty(),
+    body('address').optional().trim().notEmpty(),
+    body('latitude').optional().isNumeric(),
+    body('longitude').optional().isNumeric(),
+    body('addressString').optional().trim().notEmpty(),
   ],
   validate,
   updateProfile

@@ -4,6 +4,7 @@ export interface Category {
   icon: string;
   description: string;
   basePrice: number;
+  image?: string;
 }
 
 export interface Technician {
@@ -22,11 +23,12 @@ export interface Booking {
   technicianName: string;
   date: string;
   time: string;
-  status: 'Upcoming' | 'Completed' | 'Cancelled';
+  status: 'Pending' | 'Confirmed' | 'Upcoming' | 'In Progress' | 'Completed' | 'Cancelled';
   price: number;
   address: string;
   description?: string;
   techAvatar?: string;
+  isEmergency?: boolean;
 }
 
 export interface Coupon {

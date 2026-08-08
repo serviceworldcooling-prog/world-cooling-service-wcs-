@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 // ─── Base URL ─────────────────────────────────────────────────────────────────
 // Android emulator → use 10.0.2.2
 // Physical device  → use your machine's LAN IP (run: ipconfig | findstr IPv4)
-export const BASE_URL = 'http://192.168.73.251:5000/api/v1';
+export const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.53.251:5000/api/v1';
 
 export const TOKEN_KEY = 'tech_token'; // SecureStore keys must not start with @
 
@@ -16,7 +16,7 @@ export const clearToken = ()          => SecureStore.deleteItemAsync(TOKEN_KEY);
 // ─── Axios instance ───────────────────────────────────────────────────────────
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000,
+  timeout: 45000,
   headers: { 'Content-Type': 'application/json' },
 });
 

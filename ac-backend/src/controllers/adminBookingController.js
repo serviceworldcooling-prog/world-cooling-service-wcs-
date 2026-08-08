@@ -4,6 +4,7 @@ const WorkReport = require('../models/WorkReport');
 const Notification = require('../models/Notification');
 const asyncWrapper = require('../middleware/asyncWrapper');
 const { sendSuccess, sendError, sendPaginated } = require('../utils/responseUtils');
+const { triggerFirstBookingReferralReward } = require('./referralController');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/v1/admin/bookings
@@ -142,9 +143,24 @@ const createBooking = asyncWrapper(async (req, res) => {
     return sendError(res, 400, 'customerId, serviceType, preferredDate, preferredTime, address are required');
   }
 
+  let technicianName = 'Assigning...';
+  let techAvatar = '';
+  let technicianPhone = '';
+  if (technicianId) {
+    const technician = await User.findById(technicianId);
+    if (technician) {
+      technicianName = technician.name;
+      techAvatar = technician.avatar || '';
+      technicianPhone = technician.phone || '';
+    }
+  }
+
   const booking = await Booking.create({
     customerId,
     technicianId: technicianId || null,
+    technicianName,
+    techAvatar,
+    technicianPhone,
     serviceType,
     problemDescription: problemDescription || '',
     preferredDate,
@@ -219,10 +235,18 @@ const assignTechnician = asyncWrapper(async (req, res) => {
   }
 
   // Update booking atomically to avoid save-time validation errors if customerId missing
-  const updates = { technicianId, status: 'Upcoming' };
+  const updates = {
+    technicianId,
+    technicianName: technician.name,
+    techAvatar: technician.avatar || '',
+    technicianPhone: technician.phone || '',
+    status: 'Upcoming'
+  };
   if (price !== undefined) {
-    updates.price = Number(price);
     updates.finalPrice = Number(price);
+    if (!booking.price || booking.price === 0) {
+      updates.price = Number(price);
+    }
   }
   const updatedBooking = await Booking.findByIdAndUpdate(booking._id, updates, { new: true });
 
@@ -325,8 +349,12 @@ const updateBookingStatus = asyncWrapper(async (req, res) => {
   await Booking.findByIdAndUpdate(booking._id, statusUpdate, { runValidators: false });
 
   const updated = await Booking.findById(booking._id)
-    .populate('customerId', 'name phone avatar email')
-    .populate('technicianId', 'name phone avatar specialty rating');
+    .populate('customerId', 'name phone avatar')
+    .populate('technicianId', 'name phone avatar specialty');
+
+  if (status === 'Completed' && prevStatus !== 'Completed') {
+    triggerFirstBookingReferralReward(updated).catch(() => {});
+  }
 
   return sendSuccess(res, 200, `Booking status updated to ${status}`, { booking: updated });
 });

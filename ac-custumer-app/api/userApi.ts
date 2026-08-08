@@ -11,6 +11,13 @@ export const updateProfile = async (payload: {
   name?: string;
   phone?: string;
   avatar?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  addressString?: string;
 }) => {
   const { data } = await apiClient.put('/user/profile', payload);
   return data.user;

@@ -27,9 +27,9 @@ export const ReferEarnScreen = ({ navigation }: any) => {
         
         {/* Gift Banner */}
         <View style={styles.bannerCard}>
-          <MaterialIcons name="card-giftcard" size={80} color="#ffffff" />
-          <Text style={styles.bannerTitle}>Spread the Cool Air</Text>
-          <Text style={styles.bannerSubtitle}>Invite your friends to try CoolBreeze. They get ₹150 off, and you earn ₹150 credit once their first AC service is complete!</Text>
+          <MaterialIcons name="card-giftcard" size={60} color="#ffffff" />
+          <Text style={styles.bannerTitle}>Earn 5% Points + FREE Service 🎁</Text>
+          <Text style={styles.bannerSubtitle}>Invite customers or technicians to try AC Service! When a friend completes their 1st booking, you earn 5% points, they get 2% welcome bonus. Reaching 100% milestone unlocks a FREE AC Service!</Text>
         </View>
 
         {/* Share Code Box */}

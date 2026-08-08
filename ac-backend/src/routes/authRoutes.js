@@ -119,4 +119,33 @@ router.post(
   technicianLogin
 );
 
+// ── GET /api/auth/cloudinary-signature ───────────────────
+router.get('/cloudinary-signature', protect, (req, res) => {
+  try {
+    const crypto = require('crypto');
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET || 'ml_default';
+
+    if (!apiSecret) {
+      return res.status(500).json({ success: false, message: 'Cloudinary API secret is not configured' });
+    }
+
+    // Create signature string
+    const signatureStr = `timestamp=${timestamp}&upload_preset=${uploadPreset}${apiSecret}`;
+    const signature = crypto.createHash('sha1').update(signatureStr).digest('hex');
+
+    res.status(200).json({
+      success: true,
+      signature,
+      timestamp,
+      apiKey: process.env.CLOUDINARY_API_KEY,
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+      uploadPreset
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

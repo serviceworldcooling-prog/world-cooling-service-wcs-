@@ -115,7 +115,7 @@ exports.login = async (req, res, next) => {
     console.log(`   ⛔ Account blocked — status: ${user.status}, isActive: ${user.isActive}`);
     return res.status(403).json({
       success: false,
-      message: 'Your account has been deactivated. Please contact admin.',
+      message: 'Your account has been blocked. Please contact the administrator to unblock.',
     });
   }
   console.log('   ✅ Account active');
@@ -329,7 +329,7 @@ exports.technicianLogin = async (req, res, next) => {
       console.log(`   ⛔ Account blocked — status: ${user.status}, isActive: ${user.isActive}\n`);
       return res.status(403).json({
         success: false,
-        message: 'Your account has been deactivated. Please contact admin.',
+        message: 'Your account has been blocked. Please contact the administrator to unblock.',
       });
     }
 
@@ -356,4 +356,124 @@ exports.getMe = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+exports.googleOauthPage = (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fafafa; margin: 0; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; box-sizing: border-box; }
+        .card { background: white; border: 1px solid #dadce0; padding: 40px; border-radius: 8px; width: 100%; max-width: 360px; box-shadow: none; text-align: center; }
+        .google-logo { font-size: 24px; font-weight: bold; margin-bottom: 16px; }
+        .google-logo span:nth-child(1) { color: #4285F4; }
+        .google-logo span:nth-child(2) { color: #EA4335; }
+        .google-logo span:nth-child(3) { color: #FBBC05; }
+        .google-logo span:nth-child(4) { color: #4285F4; }
+        .google-logo span:nth-child(5) { color: #34A853; }
+        .google-logo span:nth-child(6) { color: #EA4335; }
+        .title { font-size: 24px; font-weight: 400; color: #202124; margin-bottom: 8px; }
+        .subtitle { font-size: 14px; color: #5f6368; margin-bottom: 28px; }
+        .btn-account { display: flex; align-items: center; padding: 12px; border: none; border-bottom: 1px solid #dadce0; background: none; width: 100%; text-align: left; cursor: pointer; }
+        .btn-account:first-of-type { border-top: 1px solid #dadce0; }
+        .btn-account:active { background-color: #f5f5f5; }
+        .avatar { width: 28px; height: 28px; border-radius: 14px; background-color: #1a73e8; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; font-size: 13px; }
+        .name { font-size: 14px; font-weight: 500; color: #3c4043; }
+        .email { font-size: 12px; color: #5f6368; }
+        .form-title { font-size: 12px; font-weight: bold; color: #5f6368; margin: 24px 0 12px; text-align: left; letter-spacing: 0.5px; }
+        .input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 4px; box-sizing: border-box; font-size: 14px; margin-bottom: 12px; outline: none; }
+        .input:focus { border-color: #1a73e8; }
+        .submit-btn { width: 100%; padding: 12px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px; }
+        .submit-btn:active { background-color: #1557b0; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="google-logo">
+          <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+        </div>
+        <div class="title">Sign in</div>
+        <div class="subtitle">to continue to World Cooling Service</div>
+
+        <button class="btn-account" onclick="oauthRedirect('danishchouhan41@gmail.com', 'Danish Chouhan')">
+          <div class="avatar">D</div>
+          <div>
+            <div class="name">Danish Chouhan</div>
+            <div class="email">danishchouhan41@gmail.com</div>
+          </div>
+        </button>
+
+        <button class="btn-account" onclick="oauthRedirect('customer@acservice.com', 'Test Customer')">
+          <div class="avatar" style="background-color: #0f9d58;">T</div>
+          <div>
+            <div class="name">Test Customer</div>
+            <div class="email">customer@acservice.com</div>
+          </div>
+        </button>
+
+        <div class="form-title">OR USE A DIFFERENT GOOGLE ACCOUNT</div>
+        <form onsubmit="event.preventDefault(); submitForm();">
+          <input type="email" id="email" class="input" placeholder="Google Email address" required>
+          <input type="text" id="name" class="input" placeholder="Your Name" required>
+          <button type="submit" class="submit-btn">Next</button>
+        </form>
+      </div>
+
+      <script>
+        function oauthRedirect(email, name) {
+          const encodedEmail = encodeURIComponent(email);
+          const encodedName = encodeURIComponent(name);
+          window.location.href = '/api/auth/google/callback?email=' + encodedEmail + '&name=' + encodedName + '&code=oauth_code_mock';
+        }
+        function submitForm() {
+          const email = document.getElementById('email').value;
+          const name = document.getElementById('name').value;
+          oauthRedirect(email, name);
+        }
+      </script>
+    </body>
+    </html>
+  `);
+};
+
+exports.googleOauthCallback = (req, res) => {
+  const { email, name, code } = req.query;
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #fafafa; margin: 0; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+        .card { background: white; border: 1px solid #dadce0; padding: 40px; border-radius: 8px; text-align: center; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #1a73e8; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h3>Authorizing with WCS...</h3>
+        <div class="spinner"></div>
+        <p>Please wait while we securely redirect you back to the app.</p>
+      </div>
+      <script>
+        const payload = JSON.stringify({
+          type: 'OAUTH_COMPLETE',
+          email: "${email}",
+          name: "${name}",
+          code: "${code}"
+        });
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(payload);
+        } else {
+          setTimeout(() => {
+            if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(payload);
+          }, 500);
+        }
+      </script>
+    </body>
+    </html>
+  `);
 };

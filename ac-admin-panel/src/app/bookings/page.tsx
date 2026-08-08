@@ -16,7 +16,7 @@ import {
   AlertTriangle, Phone, Mail, MapPin, CreditCard,
   ClipboardList, Wrench, Star, ChevronLeft, ChevronRight,
   Calendar, Timer, Tag, User, CheckSquare, Ban,
-  ArrowUpRight, CircleDot,
+  ArrowUpRight, ExternalLink, CircleDot,
 } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ const extractCustomer = (b: any): { name: string; phone: string; email: string; 
       name:   b.customerId.name   || '—',
       phone:  b.customerId.phone  || '—',
       email:  b.customerId.email  || '—',
-      avatar: b.customerId.avatar || '',
+      avatar: b.customerId.avatar || b.customerId.profilePic || b.customerId.photo || b.customerId.image || '',
     };
   }
 
@@ -60,7 +60,7 @@ const extractCustomer = (b: any): { name: string; phone: string; email: string; 
       name:   b.customer.name   || '—',
       phone:  b.customer.phone  || '—',
       email:  b.customer.email  || '—',
-      avatar: b.customer.avatar || '',
+      avatar: b.customer.avatar || b.customer.profilePic || b.customer.photo || b.customer.image || '',
     };
   }
 
@@ -70,7 +70,7 @@ const extractCustomer = (b: any): { name: string; phone: string; email: string; 
       name:   b.customerName  || '—',
       phone:  b.customerPhone || '—',
       email:  '—',
-      avatar: '',
+      avatar: b.customerAvatar || b.customerProfilePic || b.customerPhoto || '',
     };
   }
 
@@ -80,7 +80,7 @@ const extractCustomer = (b: any): { name: string; phone: string; email: string; 
 
 const extractTech = (b: any) => {
   const t = (b?.technicianId && typeof b.technicianId === 'object') ? b.technicianId : null;
-  return t ? { name: t.name || '—', specialty: t.specialty || '', phone: t.phone || '', rating: t.rating ?? '—', avatar: t.avatar || '' } : null;
+  return t ? { name: t.name || '—', specialty: t.specialty || '', phone: t.phone || '', rating: t.rating ?? '—', avatar: t.avatar || t.profilePic || t.photo || t.image || '' } : null;
 };
 
 const fmt = (v: any) => (v !== undefined && v !== null && v !== '') ? String(v) : '—';
@@ -90,6 +90,68 @@ const fmtDate  = (d: any) => {
   try { return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
   catch { return String(d); }
 };
+
+// ─── Avatar Component with Initial Fallback ──────────────────────────────────
+function AvatarBadge({
+  name,
+  avatar,
+  type = 'customer',
+  size = 'sm',
+  className = '',
+}: {
+  name?: string;
+  avatar?: string | null;
+  type?: 'customer' | 'technician';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const cleanName = name || (type === 'customer' ? 'Customer' : 'Technician');
+  const initial = (cleanName.trim()?.[0] || (type === 'customer' ? 'C' : 'T')).toUpperCase();
+
+  const isDummyPic = !avatar ||
+    typeof avatar !== 'string' ||
+    !avatar.trim() ||
+    avatar.includes('unsplash.com') ||
+    avatar.includes('placeholder') ||
+    avatar.includes('dummy');
+
+  if (!isDummyPic && !imgError) {
+    const sizeClasses = size === 'lg'
+      ? 'w-11 h-11'
+      : size === 'sm'
+      ? (type === 'customer' ? 'w-8 h-8' : 'w-7 h-7')
+      : 'w-9 h-9';
+    return (
+      <img
+        src={avatar!}
+        alt={cleanName}
+        onError={() => setImgError(true)}
+        className={`${sizeClasses} rounded-full object-cover shrink-0 ${className}`}
+      />
+    );
+  }
+
+  if (size === 'lg') {
+    return (
+      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-800 text-sm shrink-0 ${type === 'customer' ? 'bg-gradient-to-br from-primary-400 to-primary-700 text-white' : 'bg-slate-100 text-slate-700'} ${className}`}>
+        {initial !== '—' && initial !== '?' ? initial : <User size={16} />}
+      </div>
+    );
+  }
+
+  const badgeClasses = size === 'sm'
+    ? (type === 'customer'
+        ? 'w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-700 text-white text-xs font-800'
+        : 'w-7 h-7 rounded-full bg-slate-100 text-slate-700 text-xs font-800')
+    : 'w-9 h-9 rounded-full bg-slate-100 text-slate-700 text-xs font-800';
+
+  return (
+    <div className={`${badgeClasses} flex items-center justify-center shrink-0 ${className}`}>
+      {initial !== '—' && initial !== '?' ? initial : '?'}
+    </div>
+  );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function BookingsPage() {
@@ -117,6 +179,7 @@ export default function BookingsPage() {
   const [workReport, setWorkReport] = useState<any>(null);
   const [assignTechId, setAssignTechId] = useState('');
   const [assignPrice,  setAssignPrice]  = useState('');
+  const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
   // ── Action loading flags
   const [statusChanging, setStatusChanging] = useState(false);
@@ -272,7 +335,7 @@ export default function BookingsPage() {
     >
 
       {/* ── Stat Cards ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-6">
         {[
           { label: 'Total',       value: total,              Icon: CalendarCheck,  color: 'text-primary-700',  bg: 'bg-primary-50',  border: 'border-primary-100' },
           { label: 'Pending',     value: stats.pending,      Icon: Clock,          color: 'text-amber-600',    bg: 'bg-amber-50',    border: 'border-amber-100' },
@@ -281,35 +344,35 @@ export default function BookingsPage() {
           { label: 'Completed',   value: stats.completed,    Icon: CheckCircle2,   color: 'text-emerald-600',  bg: 'bg-emerald-50',  border: 'border-emerald-100' },
           { label: 'Cancelled',   value: stats.cancelled,    Icon: XCircle,        color: 'text-red-500',      bg: 'bg-red-50',      border: 'border-red-100' },
         ].map(({ label, value, Icon, color, bg, border }) => (
-          <div key={label} className={`bg-white rounded-2xl p-4 border ${border} shadow-sm hover:shadow-md transition-shadow flex items-center gap-3`}>
-            <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
-              <Icon size={20} className={color} />
+          <div key={label} className={`bg-white rounded-2xl p-3 sm:p-4 border ${border} shadow-sm hover:shadow-md transition-shadow flex items-center gap-2.5 sm:gap-3 min-w-0`}>
+            <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
+              <Icon size={18} className={`${color} shrink-0`} />
             </div>
-            <div>
-              <p className="text-xs font-600 text-slate-400 uppercase tracking-wide">{label}</p>
-              <p className="text-2xl font-800 text-slate-900 leading-tight">{value}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs font-600 text-slate-400 uppercase tracking-wide truncate">{label}</p>
+              <p className="text-lg sm:text-2xl font-800 text-slate-900 leading-tight truncate">{value}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* ── Table Card ─────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      {/* ── Table Card (Touched Left & Right on Mobile) ────────────────────── */}
+      <div className="-mx-4 sm:mx-0 rounded-none sm:rounded-2xl bg-white border-y sm:border border-slate-200/70 shadow-card overflow-hidden">
 
         {/* Toolbar */}
-        <div className="px-5 py-4 border-b border-slate-100 flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <h2 className="text-sm font-700 text-slate-800">
+        <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-100 flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-700 text-slate-800 flex items-center gap-2">
               All Bookings
-              <span className="ml-2 text-xs font-600 text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{total}</span>
+              <span className="text-xs font-600 text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{total}</span>
             </h2>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="btn-secondary py-2 text-xs gap-1.5"
+              className="btn-secondary py-1.5 px-3 text-xs gap-1.5 shrink-0"
             >
               <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
           <SearchFilter
@@ -323,8 +386,8 @@ export default function BookingsPage() {
           />
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Desktop Table (Hidden on Mobile) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full min-w-[860px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
@@ -361,17 +424,21 @@ export default function BookingsPage() {
                   >
                     {/* Booking ID */}
                     <td className="px-5 py-4">
-                      <span className="text-xs font-700 text-primary-700 bg-primary-50 border border-primary-100 px-2.5 py-1 rounded-lg">
-                        {b.bookingId ?? '—'}
-                      </span>
+                      <div className="flex flex-col gap-1.5 items-start">
+                        <span className="text-xs font-700 text-primary-700 bg-primary-50 border border-primary-100 px-2.5 py-1 rounded-lg">
+                          {b.bookingId ?? '—'}
+                        </span>
+                        {b.isEmergency && (
+                          <span className="text-[9px] font-900 text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 uppercase tracking-wider animate-pulse">
+                            🚨 Emergency
+                          </span>
+                        )}
+                      </div>
                     </td>
-
-                    {/* Customer */}
+                      {/* Customer */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-700 flex items-center justify-center text-white text-xs font-800 shrink-0">
-                          {cust.name !== '—' ? cust.name[0].toUpperCase() : '?'}
-                        </div>
+                        <AvatarBadge name={cust.name} avatar={cust.avatar} type="customer" size="sm" />
                         <div>
                           <p className="text-sm font-700 text-slate-800 leading-tight">{cust.name}</p>
                           <p className="text-xs text-slate-400">{cust.phone}</p>
@@ -399,13 +466,11 @@ export default function BookingsPage() {
                     <td className="px-5 py-4">
                       {tech ? (
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 text-xs font-800 shrink-0">
-                            {tech.name[0]?.toUpperCase()}
-                          </div>
+                          <AvatarBadge name={tech.name} avatar={tech.avatar} type="technician" size="sm" />
                           <div>
                             <p className="text-sm font-600 text-slate-700 leading-tight">{tech.name}</p>
-                            {b.otpStatus && b.otpStatus !== 'Pending' && (
-                              <span className="text-[10px] font-700 text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                            {(b.otpStatus?.toLowerCase?.().includes('verified') || b.startOtpVerified || b.endOtpVerified || b.otpVerified) && (
+                              <span className="text-[10px] font-700 text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full">
                                 OTP ✓
                               </span>
                             )}
@@ -423,12 +488,19 @@ export default function BookingsPage() {
 
                     {/* Amount */}
                     <td className="px-5 py-4">
-                      <p className="text-sm font-800 text-slate-900">{fmtMoney(b.finalPrice ?? b.price)}</p>
-                      {b.paymentStatus && (
-                        <p className={`text-[10px] font-700 mt-0.5 ${b.paymentStatus === 'Paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                          {b.paymentStatus}
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-700 text-slate-600">
+                          Booking: <span className="font-800 text-slate-900">{fmtMoney(b.price || b.estimatedPrice || 0)}</span>
                         </p>
-                      )}
+                        <p className="text-xs font-700 text-teal-700">
+                          Assigned: <span className="font-800 text-teal-800">{(b.finalPrice || b.assignedPrice) ? fmtMoney(b.finalPrice ?? b.assignedPrice) : 'Pending'}</span>
+                        </p>
+                        {b.paymentStatus && (
+                          <p className={`text-[10px] font-700 ${b.paymentStatus === 'Paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            {b.paymentStatus}
+                          </p>
+                        )}
+                      </div>
                     </td>
 
                     {/* Status */}
@@ -471,9 +543,111 @@ export default function BookingsPage() {
           </table>
         </div>
 
+        {/* Mobile Booking List Cards (Visible on Mobile < md screens) */}
+        <div className="block md:hidden divide-y divide-slate-100">
+          {loading ? (
+            <div className="px-4 py-16 text-center">
+              <Loader2 className="mx-auto animate-spin text-slate-300" size={28} />
+              <p className="text-xs text-slate-400 mt-2">Loading bookings…</p>
+            </div>
+          ) : bookings.length === 0 ? (
+            <div className="px-4 py-16 text-center">
+              <CalendarCheck size={32} className="mx-auto text-slate-200 mb-2" />
+              <p className="text-sm font-700 text-slate-400">No bookings found</p>
+              <p className="text-xs text-slate-300 mt-1">Try adjusting your search or filters</p>
+            </div>
+          ) : (
+            bookings.map((b) => {
+              const cust = extractCustomer(b);
+              const tech = extractTech(b);
+              return (
+                <div key={b._id} className="p-4 space-y-3 hover:bg-slate-50/60 transition-colors">
+                  {/* Header: Booking ID + Emergency Tag + Status */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-700 text-primary-700 bg-primary-50 border border-primary-100 px-2 py-0.5 rounded-lg">
+                        {b.bookingId ?? '—'}
+                      </span>
+                      {b.isEmergency && (
+                        <span className="text-[9px] font-900 text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-md uppercase tracking-wider animate-pulse">
+                          🚨 Emergency
+                        </span>
+                      )}
+                    </div>
+                    <Badge variant={bookingStatusVariant(b.status)} label={b.status} dot />
+                  </div>
+
+                  {/* Customer Info & Service */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <AvatarBadge name={cust.name} avatar={cust.avatar} type="customer" size="sm" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-800 text-slate-900 truncate">{cust.name}</p>
+                        <p className="text-[11px] text-slate-400 truncate">{cust.phone}</p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-700 text-slate-800 max-w-[120px] truncate">{b.serviceType ?? b.service ?? '—'}</p>
+                      <p className="text-[11px] text-slate-400">{b.preferredDate ?? b.date ?? '—'}</p>
+                    </div>
+                  </div>
+
+                  {/* Technician & Amount Row */}
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                    <div className="min-w-0">
+                      {tech ? (
+                        <div className="flex items-center gap-1.5">
+                          <AvatarBadge name={tech.name} avatar={tech.avatar} type="technician" size="sm" />
+                          <span className="font-600 text-slate-700 truncate">{tech.name}</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => openAssign(b)}
+                          className="inline-flex items-center gap-1 text-[11px] font-700 text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg"
+                        >
+                          <UserCheck size={11} /> Assign Tech
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-700 text-slate-700">{fmtMoney(b.price || b.estimatedPrice || 0)}</p>
+                      <p className="text-[10px] font-600 text-teal-700">Assigned: {(b.finalPrice || b.assignedPrice) ? fmtMoney(b.finalPrice ?? b.assignedPrice) : 'Pending'}</p>
+                    </div>
+                  </div>
+
+                  {/* Actions Row */}
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      onClick={() => openView(b._id)}
+                      className="btn-secondary text-xs py-1 px-2.5 gap-1"
+                    >
+                      <Eye size={13} /> View
+                    </button>
+                    {!tech && (
+                      <button
+                        onClick={() => openAssign(b)}
+                        className="bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 text-xs font-700 py-1 px-2.5 rounded-xl transition-all flex items-center gap-1"
+                      >
+                        <UserCheck size={13} /> Assign
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setDeleteId(b._id)}
+                      className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 text-xs font-700 py-1 px-2 rounded-xl transition-all flex items-center gap-1"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
         {/* Pagination — only when total > PAGE_SIZE */}
         {showPagination && (
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-t border-slate-100 bg-slate-50/50">
             <p className="text-xs text-slate-400">
               Showing <span className="font-700 text-slate-600">{Math.min((page - 1) * PAGE_SIZE + 1, total)}–{Math.min(page * PAGE_SIZE, total)}</span> of <span className="font-700 text-slate-600">{total}</span>
             </p>
@@ -486,7 +660,6 @@ export default function BookingsPage() {
                 <ChevronLeft size={16} />
               </button>
               {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                // Always show first, last, current ±1, with ellipsis
                 const p = i + 1;
                 return (
                   <button
@@ -535,9 +708,16 @@ export default function BookingsPage() {
             <div className="space-y-5">
 
               {/* ── Hero strip */}
-              <div className="flex items-start justify-between gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary-700 to-primary-600 text-white">
+              <div className={`flex items-start justify-between gap-4 p-4 rounded-2xl text-white ${selected.isEmergency ? 'bg-gradient-to-r from-red-700 to-red-500' : 'bg-gradient-to-r from-primary-700 to-primary-600'}`}>
                 <div>
-                  <p className="text-xs font-600 text-primary-200 uppercase tracking-wider mb-1">Service</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-xs font-600 text-primary-200 uppercase tracking-wider">Service</p>
+                    {selected.isEmergency && (
+                      <span className="text-[9px] font-900 bg-white text-red-700 px-1.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                        🚨 Emergency
+                      </span>
+                    )}
+                  </div>
                   <p className="text-lg font-800 leading-tight">{fmt(selected.serviceType ?? selected.service)}</p>
                   <p className="text-xs text-primary-200 mt-1 flex items-center gap-1.5">
                     <Calendar size={11} /> {fmt(selected.preferredDate ?? selected.date)}
@@ -557,9 +737,7 @@ export default function BookingsPage() {
                     <User size={11} /> Customer
                   </p>
                   <div className="flex items-center gap-3">
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-800 text-sm shrink-0 ${cust.name !== '—' && cust.name !== 'Deleted User' ? 'bg-gradient-to-br from-primary-400 to-primary-700 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                      {cust.name !== '—' && cust.name !== 'Deleted User' ? cust.name[0].toUpperCase() : <User size={16} />}
-                    </div>
+                    <AvatarBadge name={cust.name} avatar={cust.avatar} type="customer" size="lg" />
                     <div>
                       <p className="text-sm font-800 text-slate-900">{cust.name}</p>
                       {cust.phone !== '—'
@@ -583,15 +761,37 @@ export default function BookingsPage() {
                       </div>
                     )}
                     {selected.address && (
-                      <div className="flex items-start gap-2 text-xs text-slate-600">
-                        <MapPin size={11} className="text-slate-400 mt-0.5 shrink-0" />
-                        <span>{selected.address}</span>
+                      <div className="flex items-start justify-between gap-2 text-xs text-slate-600">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <MapPin size={12} className="text-slate-400 mt-0.5 shrink-0" />
+                          <span className="truncate">{selected.address}</span>
+                        </div>
+                        {(!selected.isLiveLocation && !selected.lat) && (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selected.address)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] font-700 text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-md hover:bg-teal-100 transition-colors shrink-0"
+                          >
+                            <MapPin size={10} /> View Map
+                          </a>
+                        )}
                       </div>
                     )}
-                    {selected.isLiveLocation && (
-                      <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">
-                        <Navigation size={11} />
-                        Live: {selected.lat?.toFixed?.(5)}, {selected.lng?.toFixed?.(5)}
+                    {(selected.isLiveLocation || (selected.lat && selected.lng)) && (
+                      <div className="flex items-center justify-between gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200/80 p-2 rounded-xl mt-1.5 shadow-2xs">
+                        <div className="flex items-center gap-2 font-600 min-w-0 truncate">
+                          <Navigation size={13} className="text-emerald-600 animate-pulse shrink-0" />
+                          <span className="truncate">Live: {selected.lat?.toFixed?.(5) ?? selected.lat}, {selected.lng?.toFixed?.(5) ?? selected.lng}</span>
+                        </div>
+                        <a
+                          href={`https://www.google.com/maps?q=${selected.lat},${selected.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-[10px] font-800 text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 px-3 py-1.5 rounded-lg shadow-xs transition-all shrink-0"
+                        >
+                          <MapPin size={12} /> View Map
+                        </a>
                       </div>
                     )}
                   </div>
@@ -605,9 +805,7 @@ export default function BookingsPage() {
                   {tech ? (
                     <>
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center font-800 text-slate-600 text-sm shrink-0">
-                          {tech.name[0]?.toUpperCase()}
-                        </div>
+                        <AvatarBadge name={tech.name} avatar={tech.avatar} type="technician" size="lg" />
                         <div>
                           <p className="text-sm font-800 text-slate-900">{tech.name}</p>
                           <p className="text-xs text-slate-400">{tech.specialty || '—'}</p>
@@ -628,7 +826,16 @@ export default function BookingsPage() {
                         )}
                         <div className="flex items-center gap-2 text-xs text-slate-600">
                           <ClipboardList size={11} className="text-slate-400" />
-                          OTP Status: <span className="font-700">{fmt(selected.otpStatus)}</span>
+                          OTP Status:{' '}
+                          <span className={`font-700 ${
+                            (selected.otpStatus?.toLowerCase?.().includes('verified') || selected.startOtpVerified || selected.endOtpVerified || selected.otpVerified)
+                              ? 'text-emerald-700'
+                              : 'text-amber-600'
+                          }`}>
+                            {(selected.otpStatus?.toLowerCase?.().includes('verified') || selected.startOtpVerified || selected.endOtpVerified || selected.otpVerified)
+                              ? `${selected.otpStatus || 'Verified'} ✓`
+                              : (selected.otpStatus || 'Pending Verification')}
+                          </span>
                         </div>
                       </div>
                     </>
@@ -652,10 +859,10 @@ export default function BookingsPage() {
               {/* ── Booking details row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { icon: Tag,        label: 'Booking ID',    value: fmt(selected.bookingId) },
-                  { icon: CreditCard, label: 'Amount',        value: fmtMoney(selected.finalPrice ?? selected.price) },
-                  { icon: CreditCard, label: 'Payment',       value: fmt(selected.paymentMethod) },
-                  { icon: CreditCard, label: 'Pay Status',    value: fmt(selected.paymentStatus) },
+                  { icon: Tag,        label: 'Booking ID',       value: fmt(selected.bookingId) },
+                  { icon: CreditCard, label: 'Cust Booking Amt', value: fmtMoney(selected.price || selected.estimatedPrice || 0) },
+                  { icon: CreditCard, label: 'Admin Assigned Amt',value: (selected.finalPrice || selected.assignedPrice) ? fmtMoney(selected.finalPrice ?? selected.assignedPrice) : 'Pending' },
+                  { icon: CreditCard, label: 'Pay Status',       value: fmt(selected.paymentStatus) },
                 ].map(({ icon: Icon, label, value }) => (
                   <div key={label} className="rounded-xl border border-slate-100 p-3">
                     <div className="flex items-center gap-1.5 mb-1.5">
@@ -708,7 +915,7 @@ export default function BookingsPage() {
 
               {/* ── Work Report */}
               {workReport && (
-                <div className="rounded-2xl border border-slate-100 p-4 space-y-3">
+                <div className="rounded-2xl border border-slate-100 p-4 space-y-4">
                   <p className="text-[11px] font-700 text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                     <ClipboardList size={11} /> Work Report
                   </p>
@@ -718,20 +925,51 @@ export default function BookingsPage() {
                       <p className="text-sm text-slate-700">{workReport.workDone}</p>
                     </div>
                   )}
-                  {workReport.partsReplaced?.length > 0 && (
+                  {workReport.selectedWorks?.length > 0 && (
                     <div>
-                      <p className="text-xs font-700 text-slate-500 mb-1">Parts Replaced</p>
+                      <p className="text-xs font-700 text-slate-500 mb-1">Selected Works</p>
                       <div className="flex flex-wrap gap-2">
-                        {workReport.partsReplaced.map((p: string, i: number) => (
-                          <span key={i} className="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-lg">{p}</span>
+                        {workReport.selectedWorks.map((p: string, i: number) => (
+                          <span key={i} className="text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg font-600">{p}</span>
                         ))}
                       </div>
                     </div>
                   )}
-                  {workReport.technicianNote && (
+                  {workReport.techNote && (
                     <div>
                       <p className="text-xs font-700 text-slate-500 mb-1">Technician Note</p>
-                      <p className="text-sm text-slate-700">{workReport.technicianNote}</p>
+                      <p className="text-sm text-slate-700">{workReport.techNote}</p>
+                    </div>
+                  )}
+
+                  {/* Photos Grid */}
+                  {workReport.photos && workReport.photos.length > 0 && (
+                    <div>
+                      <p className="text-xs font-700 text-slate-500 mb-2">Job Photos ({workReport.photos.length})</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {workReport.photos.map((url: string, i: number) => (
+                          <div 
+                            key={i} 
+                            onClick={() => setZoomImage({ url, title: `Job Photo #${i + 1}` })}
+                            className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group cursor-pointer"
+                          >
+                            <img src={url} alt={`Job photo ${i + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-700">
+                              Zoom Photo
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Video Player */}
+                  {workReport.video && (
+                    <div>
+                      <p className="text-xs font-700 text-slate-500 mb-2">Job Video</p>
+                      <div className="rounded-xl overflow-hidden border border-slate-150 bg-slate-50 aspect-video max-w-sm">
+                        <video src={workReport.video} controls className="w-full h-full" />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -912,6 +1150,37 @@ export default function BookingsPage() {
         </div>
       </Modal>
 
+    
+      {/* ── Image Zoom Lightbox Modal ── */}
+      {zoomImage && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setZoomImage(null)}
+        >
+          <div 
+            className="relative max-w-lg w-full bg-slate-900 border border-white/10 rounded-3xl p-5 shadow-2xl flex flex-col items-center gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-800 text-white tracking-tight">{zoomImage.title}</h3>
+              <button
+                onClick={() => setZoomImage(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+              >
+                <XCircle size={18} />
+              </button>
+            </div>
+
+            <div className="w-full max-h-[70vh] flex items-center justify-center overflow-hidden rounded-2xl bg-black/50 p-2">
+              <img
+                src={zoomImage.url}
+                alt={zoomImage.title}
+                className="max-h-[65vh] w-auto max-w-full object-contain rounded-xl shadow-2xl ring-1 ring-white/10"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

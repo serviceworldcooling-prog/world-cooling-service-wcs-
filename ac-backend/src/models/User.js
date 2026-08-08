@@ -48,6 +48,14 @@ const userSchema = new mongoose.Schema({
   // Wallet
   walletBalance: { type: Number, default: 0, min: 0 },
 
+  // Referral & 100% Free Service Milestone System
+  referralCode: { type: String, default: '' },
+  referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  referralProgress: { type: Number, default: 0, min: 0 }, // 0% to 100% progress toward Free AC Service
+  referralPoints: { type: Number, default: 0 },
+  freeServicesEarned: { type: Number, default: 0 },
+  freeServicesAvailable: { type: Number, default: 0 },
+
   // AMC Membership
   hasMembership: { type: Boolean, default: false },
   activePlanId: { type: mongoose.Schema.Types.ObjectId, ref: 'AMCPlan', default: null },
@@ -76,6 +84,28 @@ const userSchema = new mongoose.Schema({
     default: '',
   },
   city: {
+    type: String,
+    default: '',
+  },
+  state: {
+    type: String,
+    default: '',
+  },
+  pincode: {
+    type: String,
+    default: '',
+  },
+  address: {
+    type: String,
+    default: '',
+  },
+  latitude: {
+    type: Number,
+  },
+  longitude: {
+    type: Number,
+  },
+  addressString: {
     type: String,
     default: '',
   },

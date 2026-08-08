@@ -20,9 +20,15 @@ const bookingSchema = new mongoose.Schema({
     required: [true, 'Service type is required'],
     enum: [
       'AC Service / Cleaning',
+      'AC Service & Cleaning',
+      'AC Service',
       'AC Repair',
       'Gas Charging',
       'AC Installation',
+      'AC Uninstallation',
+      'Jet Cleaning',
+      'PCB Repair',
+      'Water Leakage',
       'Water Leakage Fix',
       'Compressor Repair',
       'PCB / Electrical Fault',
@@ -40,6 +46,8 @@ const bookingSchema = new mongoose.Schema({
   lat: { type: Number, default: null },
   lng: { type: Number, default: null },
   isLiveLocation: { type: Boolean, default: false },
+  techLat: { type: Number, default: null },
+  techLng: { type: Number, default: null },
 
   // Technician assigned by admin
   technicianId: {
@@ -49,6 +57,7 @@ const bookingSchema = new mongoose.Schema({
   },
   technicianName: { type: String, default: 'Assigning...' },
   techAvatar: { type: String, default: '' },
+  technicianPhone: { type: String, default: '' },
 
   // Status flow: Pending → Confirmed → Upcoming → In Progress → Completed / Cancelled
   status: {
@@ -85,6 +94,15 @@ const bookingSchema = new mongoose.Schema({
   cancelledAt: { type: Date, default: null },
   cancelledBy: { type: String, default: null },
   cancellationReason: { type: String, default: '' },
+
+  // Warranty card details (Optional)
+  warrantyStatus: { type: String, enum: ['Active', 'None', null], default: null },
+  warrantyPeriod: { type: String, default: '' }, // e.g. "6 Months"
+  warrantyDetails: { type: String, default: '' },
+
+  // Extra charges details (Optional)
+  extraMaterialCharges: { type: Number, default: 0 },
+  extraAmountTaken: { type: Number, default: 0 },
 
   // Completion
   completedAt: { type: Date, default: null },

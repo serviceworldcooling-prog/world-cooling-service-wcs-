@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, Image, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { StyleSheet, Text, View, SafeAreaView, Dimensions, TouchableOpacity, FlatList, Animated, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, ROUNDED, SPACING } from '../../constants/theme';
 import { AppButton } from '../../components/Common';
@@ -8,37 +8,43 @@ const { width } = Dimensions.get('window');
 
 const SLIDES = [
   {
-    id: '1',
-    title: 'Welcome to CoolBreeze',
-    subtitle: 'AC Service Excellence',
-    description: 'Instantly book expert air conditioning wet servicing, repair, gas refills, and installations from certified professionals.',
-    icon: 'ac-unit',
-    iconColor: COLORS.secondary,
+    title: 'Job Assignments',
+    description: 'Receive and accept AC repair, wet servicing, and installation jobs directly from the WCS dispatcher.',
+    image: require('../../../assets/onboarding_service.png'),
+    bgAccent: '#0F766E'
   },
   {
-    id: '2',
-    title: 'Expert Technicians',
-    subtitle: 'Verified & Certified Specialists',
-    description: 'All our service professionals are background-checked, vetted, and have 5+ years of experience. We provide a 30-day service warranty.',
-    icon: 'verified-user',
-    iconColor: '#10B981',
+    title: 'Live Navigation',
+    description: 'Get precise routing to customer locations and share real-time progress updates with a tap.',
+    image: require('../../../assets/onboarding_tracking.png'),
+    bgAccent: '#14B8A6'
   },
   {
-    id: '3',
-    title: 'Live Tracking & Support',
-    subtitle: 'Real-time GPS Tracking',
-    description: 'Monitor your assigned AC technician in real-time as they navigate to your doorstep. Chat directly inside the app for seamless support.',
-    icon: 'my-location',
-    iconColor: '#3B82F6',
-  },
+    title: 'Digital Reports',
+    description: 'Upload service completion proof, parts details, and get digital signatures from customers.',
+    image: require('../../../assets/onboarding_pricing.png'),
+    bgAccent: '#F97316'
+  }
 ];
 
 export const OnboardingScreen = ({ navigation }: any) => {
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const flatListRef = useRef<FlatList>(null);
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems && viewableItems.length > 0) {
+      setActiveIndex(viewableItems[0].index || 0);
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
 
   const handleNext = () => {
-    if (currentSlideIndex < SLIDES.length - 1) {
-      setCurrentSlideIndex(currentSlideIndex + 1);
+    if (activeIndex < SLIDES.length - 1) {
+      flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
     } else {
       navigation.replace('Login');
     }
@@ -48,53 +54,93 @@ export const OnboardingScreen = ({ navigation }: any) => {
     navigation.replace('Login');
   };
 
-  const slide = SLIDES[currentSlideIndex];
+  const renderSlide = ({ item }: { item: typeof SLIDES[0] }) => {
+    return (
+      <View style={[styles.slideContainer, { width }]}>
+        <View style={styles.contentCard}>
+          {/* Decorative Background Elements */}
+          <View style={[styles.circleBg, { backgroundColor: item.bgAccent + '08' }]} />
+          <View style={[styles.circleBgOuter, { borderColor: item.bgAccent + '15', borderWidth: 1 }]} />
+
+          <View style={[styles.imageWrapper, { backgroundColor: '#ffffff' }]}>
+            <Image
+              source={item.image}
+              style={styles.slideImage}
+              resizeMode="cover"
+            />
+          </View>
+
+          <View style={styles.textContainer}>
+            <Text style={[styles.title, { color: COLORS.textPrimary }]}>{item.title}</Text>
+            <Text style={[styles.desc, { color: COLORS.textSecondary }]}>{item.description}</Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
       <View style={styles.header}>
-        <Text style={styles.logoName}>CoolBreeze</Text>
-        {currentSlideIndex < SLIDES.length - 1 && (
-          <TouchableOpacity onPress={handleSkip}>
-            <Text style={styles.skipText}>Skip</Text>
-          </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.skipButton}
+          onPress={handleSkip}
+        >
+          <Text style={[styles.skipText, { color: COLORS.textSecondary }]}>Skip</Text>
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        ref={flatListRef}
+        data={SLIDES}
+        renderItem={renderSlide}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: false }
         )}
-      </View>
-
-      <View style={styles.slideContainer}>
-        <View style={[styles.illustrationCard, { backgroundColor: COLORS.surface }]}>
-          <View style={[styles.iconWrapper, { backgroundColor: slide.iconColor + '10' }]}>
-            <MaterialIcons name={slide.icon as any} size={80} color={slide.iconColor} />
-          </View>
-          <View style={styles.badge}>
-            <View style={[styles.badgeDot, { backgroundColor: slide.iconColor }]} />
-            <Text style={[styles.badgeText, { color: slide.iconColor }]}>{slide.subtitle}</Text>
-          </View>
-        </View>
-
-        <Text style={styles.title}>{slide.title}</Text>
-        <Text style={styles.description}>{slide.description}</Text>
-      </View>
+        scrollEventThrottle={16}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        keyExtractor={(_, index) => index.toString()}
+        style={styles.flatList}
+      />
 
       <View style={styles.footer}>
-        {/* Pagination Dots */}
-        <View style={styles.indicatorContainer}>
-          {SLIDES.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.indicator,
-                index === currentSlideIndex ? styles.indicatorActive : null,
-              ]}
-            />
-          ))}
+        <View style={styles.dotsRow}>
+          {SLIDES.map((_, idx) => {
+            const dotWidth = scrollX.interpolate({
+              inputRange: [(idx - 1) * width, idx * width, (idx + 1) * width],
+              outputRange: [8, 28, 8],
+              extrapolate: 'clamp',
+            });
+            const opacity = scrollX.interpolate({
+              inputRange: [(idx - 1) * width, idx * width, (idx + 1) * width],
+              outputRange: [0.35, 1, 0.35],
+              extrapolate: 'clamp',
+            });
+
+            return (
+              <Animated.View
+                key={idx}
+                style={[
+                  styles.dot,
+                  {
+                    width: dotWidth,
+                    opacity,
+                    backgroundColor: COLORS.primary,
+                  }
+                ]}
+              />
+            );
+          })}
         </View>
 
-        {/* Action Button */}
-        <AppButton
-          title={currentSlideIndex === SLIDES.length - 1 ? 'Get Started' : 'Next'}
+        <AppButton 
+          title={activeIndex === SLIDES.length - 1 ? 'Get Started' : 'Next'} 
           onPress={handleNext}
-          icon={currentSlideIndex === SLIDES.length - 1 ? 'arrow-forward' : undefined}
           style={styles.actionBtn}
         />
       </View>
@@ -105,115 +151,111 @@ export const OnboardingScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
     height: 50,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingHorizontal: 24,
   },
-  logoName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.primary,
+  skipButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
   },
   skipText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  flatList: {
+    flex: 1,
   },
   slideContainer: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: SPACING.lg,
+    alignItems: 'center',
+    paddingHorizontal: 24,
   },
-  illustrationCard: {
-    width: width - 48,
-    height: width - 80,
-    borderRadius: ROUNDED.xl,
-    justifyContent: 'center',
+  contentCard: {
+    width: '100%',
     alignItems: 'center',
-    marginBottom: SPACING.xl,
-    elevation: 3,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    position: 'relative',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    borderRadius: 24,
     overflow: 'hidden',
   },
-  iconWrapper: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+  circleBg: {
+    position: 'absolute',
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    top: 10,
+  },
+  circleBgOuter: {
+    position: 'absolute',
+    width: 400,
+    height: 400,
+    borderRadius: 200,
+    top: -30,
+  },
+  imageWrapper: {
+    width: width * 0.8,
+    height: width * 0.8,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 40,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  badge: {
-    position: 'absolute',
-    top: SPACING.md,
-    right: SPACING.md,
-    flexDirection: 'row',
+  slideImage: {
+    width: '100%',
+    height: '100%',
+  },
+  textContainer: {
+    paddingHorizontal: 16,
     alignItems: 'center',
-    backgroundColor: COLORS.background,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: ROUNDED.full,
-  },
-  badgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
   },
   title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: COLORS.primary,
+    fontSize: 28,
+    fontWeight: '900',
     textAlign: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: 16,
+    letterSpacing: -0.5,
   },
-  description: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
+  desc: {
+    fontSize: 16,
     textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: SPACING.md,
+    lineHeight: 26,
+    fontWeight: '500',
   },
   footer: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.lg,
-    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    paddingTop: 10,
   },
-  indicatorContainer: {
+  dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: 32,
+    alignItems: 'center',
   },
-  indicator: {
-    width: 8,
+  dot: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.border,
-    marginHorizontal: 4,
-  },
-  indicatorActive: {
-    width: 24,
-    backgroundColor: COLORS.secondary,
+    marginHorizontal: 5,
   },
   actionBtn: {
     width: '100%',
-    backgroundColor: COLORS.primary,
     height: 52,
+    backgroundColor: COLORS.primary,
     borderRadius: ROUNDED.md,
-  },
+  }
 });

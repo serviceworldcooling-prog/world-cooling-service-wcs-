@@ -69,3 +69,23 @@ exports.markOneRead = async (req, res, next) => {
     next(err);
   }
 };
+// ─────────────────────────────────────────
+// DELETE /api/notifications/:id
+// Delete a single notification
+// ─────────────────────────────────────────
+exports.deleteNotification = async (req, res, next) => {
+  try {
+    const notification = await Notification.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user._id,
+    });
+
+    if (!notification) {
+      return res.status(404).json({ success: false, message: 'Notification not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'Notification deleted' });
+  } catch (err) {
+    next(err);
+  }
+};

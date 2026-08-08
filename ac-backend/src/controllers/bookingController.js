@@ -21,6 +21,11 @@ const pushNotification = async (userId, title, message, type = 'booking', refId 
 // ─────────────────────────────────────────
 exports.createBooking = async (req, res, next) => {
   try {
+    console.log('\n📝 ════════════════════════════════════════════════');
+    console.log('📝  CREATE BOOKING REQUEST RECEIVED');
+    console.log('   Payload:', JSON.stringify(req.body, null, 2));
+    console.log('📝 ════════════════════════════════════════════════\n');
+
     const {
       serviceType,
       problemDescription,
@@ -45,7 +50,7 @@ exports.createBooking = async (req, res, next) => {
       address,
       lat: lat || null,
       lng: lng || null,
-      isLiveLocation: isLiveLocation || false,
+      isLiveLocation: false, // Must be explicitly enabled by serviceman via Share Location button
       startOtp,
       price: price || 0,
       finalPrice: price || 0,
@@ -130,10 +135,21 @@ exports.getMyBookings = async (req, res, next) => {
     if (status) query.status = status;
 
     const bookings = await Booking.find(query)
+      .populate('technicianId', 'name avatar phone')
       .sort({ createdAt: -1 })
       .select('-startOtp');  // Never send OTP in list view
 
-    res.status(200).json({ success: true, count: bookings.length, bookings });
+    const mappedBookings = bookings.map(b => {
+      const bObj = b.toObject();
+      if (bObj.technicianId && typeof bObj.technicianId === 'object') {
+        bObj.technicianName = bObj.technicianId.name || bObj.technicianName;
+        bObj.techAvatar = bObj.technicianId.avatar || bObj.techAvatar;
+        bObj.technicianPhone = bObj.technicianId.phone || bObj.technicianPhone;
+      }
+      return bObj;
+    });
+
+    res.status(200).json({ success: true, count: mappedBookings.length, bookings: mappedBookings });
   } catch (err) {
     next(err);
   }
@@ -148,13 +164,22 @@ exports.getBookingById = async (req, res, next) => {
     const booking = await Booking.findOne({
       _id: req.params.id,
       customerId: req.user._id,
-    }).populate('review', 'rating comment createdAt');
+    })
+      .populate('technicianId', 'name avatar phone')
+      .populate('review', 'rating comment createdAt');
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    res.status(200).json({ success: true, booking });
+    const bObj = booking.toObject();
+    if (bObj.technicianId && typeof bObj.technicianId === 'object') {
+      bObj.technicianName = bObj.technicianId.name || bObj.technicianName;
+      bObj.techAvatar = bObj.technicianId.avatar || bObj.techAvatar;
+      bObj.technicianPhone = bObj.technicianId.phone || bObj.technicianPhone;
+    }
+
+    res.status(200).json({ success: true, booking: bObj });
   } catch (err) {
     next(err);
   }
@@ -182,20 +207,26 @@ exports.cancelBooking = async (req, res, next) => {
       });
     }
 
-    booking.status = 'Cancelled';
-    booking.cancelledAt = new Date();
-    booking.cancellationReason = req.body.reason || 'Customer cancelled';
-    await booking.save();
+    // Free up technician if assigned
+    if (booking.technicianId) {
+      await User.findByIdAndUpdate(booking.technicianId, {
+        technicianStatus: 'Available',
+        activeBookingId: null,
+      });
+    }
+
+    // Delete the booking from the database
+    await Booking.findByIdAndDelete(booking._id);
 
     await pushNotification(
       req.user._id,
       'Booking Cancelled',
-      `Booking ${booking.bookingId} has been cancelled successfully.`,
+      `Booking ${booking.bookingId} has been cancelled and removed.`,
       'booking',
       booking.bookingId
     );
 
-    res.status(200).json({ success: true, message: 'Booking cancelled', booking });
+    res.status(200).json({ success: true, message: 'Booking cancelled and deleted', booking });
   } catch (err) {
     next(err);
   }

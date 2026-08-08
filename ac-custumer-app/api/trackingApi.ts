@@ -7,8 +7,10 @@ export interface TrackingInfo {
   address: string;
   technicianName: string;
   techAvatar: string;
+  technicianPhone?: string;
   isOtpVerified: boolean;
   estimatedArrivalMinutes: number;
+  isLiveLocation?: boolean;
   technicianLocation: { lat: number; lng: number };
   customerLocation: { lat: number | null; lng: number | null };
 }

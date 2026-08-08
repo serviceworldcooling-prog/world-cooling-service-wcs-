@@ -24,8 +24,9 @@ router.post(
     body('serviceType')
       .notEmpty().withMessage('Service type is required')
       .isIn([
-        'AC Service / Cleaning', 'AC Repair', 'Gas Charging',
-        'AC Installation', 'Water Leakage Fix', 'Compressor Repair',
+        'AC Service / Cleaning', 'AC Service & Cleaning', 'AC Service', 'AC Repair',
+        'Gas Charging', 'AC Installation', 'AC Uninstallation', 'Jet Cleaning',
+        'PCB Repair', 'Water Leakage', 'Water Leakage Fix', 'Compressor Repair',
         'PCB / Electrical Fault', 'Emergency Breakdown',
       ])
       .withMessage('Invalid service type'),

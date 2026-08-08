@@ -68,12 +68,11 @@ const updateStatus = asyncWrapper(async (req, res) => {
   if (status === 'Resolved' || status === 'Closed') {
     complaint.resolvedAt = new Date();
 
-    // Update timeline step
-    const lastStep = complaint.timeline[complaint.timeline.length - 1];
-    if (lastStep) {
-      lastStep.done        = true;
-      lastStep.completedAt = new Date();
-    }
+    // Mark ALL timeline steps as done
+    complaint.timeline.forEach(step => {
+      step.done        = true;
+      if (!step.completedAt) step.completedAt = new Date();
+    });
 
     // Notify customer
     await Notification.create({
@@ -86,10 +85,14 @@ const updateStatus = asyncWrapper(async (req, res) => {
   }
 
   if (status === 'In Progress') {
-    // Advance timeline step 2
+    // Advance timeline step 2 (Assigned to Manager) & step 3 (Resolution in Progress)
     if (complaint.timeline[1]) {
       complaint.timeline[1].done        = true;
       complaint.timeline[1].completedAt = new Date();
+    }
+    if (complaint.timeline[2]) {
+      complaint.timeline[2].done        = true;
+      complaint.timeline[2].completedAt = new Date();
     }
   }
 

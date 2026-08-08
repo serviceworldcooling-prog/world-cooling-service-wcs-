@@ -1,116 +1,109 @@
 'use client';
 
-import { Bell, Search, Settings, ChevronDown } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import Link from 'next/link';
+import { 
+  Bell, Menu, X, Clock 
+} from 'lucide-react';
 
 interface HeaderProps {
   title: string;
   subtitle?: string;
+  isCollapsed?: boolean;
+  toggleSidebar?: () => void;
 }
 
-export default function Header({ title, subtitle }: HeaderProps) {
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const router = useRouter();
-  const profileRef = useRef<HTMLDivElement | null>(null);
+export default function Header({ title, subtitle, isCollapsed, toggleSidebar }: HeaderProps) {
+  const [showNotifications, setShowNotifications] = useState(false);
 
-  const handleNotifications = () => router.push('/notifications');
-  const handleSettings = () => router.push('/settings');
-  const handleLogout = () => {
-    localStorage.removeItem('admin_token');
-    router.push('/login');
-  };
-
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setProfileOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, []);
+  const notifications = [
+    { id: 1, title: 'New Booking #BK-9482', time: '5 mins ago', unread: true, type: 'booking' },
+    { id: 2, title: 'Complaint resolved by Tech Ramesh', time: '20 mins ago', unread: true, type: 'complaint' },
+    { id: 3, title: 'AMC Plan renewal notice sent', time: '1 hour ago', unread: false, type: 'amc' },
+  ];
 
   return (
-    <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
-      <div className="flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200/80 px-3.5 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2 sm:gap-4 transition-all shadow-subtle">
+      
+      {/* Left: Sidebar Toggle & Page Info */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        {toggleSidebar && (
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-colors shrink-0"
+            title="Toggle Sidebar"
+          >
+            <Menu size={19} />
+          </button>
+        )}
 
-        {/* Page Title */}
-        <div className="min-w-0">
-          <h1 className="text-xl font-800 text-slate-900 leading-tight">{title}</h1>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <h1 className="text-sm xs:text-base sm:text-lg md:text-xl font-800 text-slate-900 tracking-tight leading-none truncate whitespace-nowrap">{title}</h1>
+            <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 text-[9px] sm:text-[10px] font-700 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
+            </span>
+          </div>
           {subtitle && (
-            <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>
+            <p className="text-[11px] sm:text-xs text-slate-500 font-500 mt-0.5 truncate hidden sm:block">{subtitle}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Right: Notifications */}
+      <div className="flex items-center gap-3">
+
+        {/* Notifications Dropdown Toggle */}
+        <div className="relative">
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-colors border border-slate-200/60"
+            title="Notifications"
+          >
+            <Bell size={18} />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+          </button>
+
+          {/* Notifications Modal Dropdown */}
+          {showNotifications && (
+            <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border border-slate-200 shadow-2xl rounded-2xl p-4 z-50 animate-slide-down">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-800 text-slate-900 uppercase tracking-wider">Notifications</h4>
+                  <span className="px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[10px] font-700">2 New</span>
+                </div>
+                <button 
+                  onClick={() => setShowNotifications(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              <div className="divide-y divide-slate-100 my-2 max-h-72 overflow-y-auto">
+                {notifications.map((item) => (
+                  <div key={item.id} className="py-2.5 px-2 hover:bg-slate-50 rounded-xl transition-colors flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <Clock size={15} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-700 text-slate-800 leading-tight">{item.title}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{item.time}</p>
+                    </div>
+                    {item.unread && <span className="w-2 h-2 rounded-full bg-primary-600 shrink-0 mt-1.5" />}
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 text-center">
+                <Link href="/notifications" onClick={() => setShowNotifications(false)} className="text-xs font-700 text-primary-700 hover:underline">
+                  View All Activity Logs →
+                </Link>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Right side controls */}
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Search Bar */}
-          <div className={`relative hidden md:flex items-center transition-all duration-300 ${searchFocused ? 'w-72' : 'w-52'}`}>
-            <Search
-              size={15}
-              className="absolute left-3.5 text-slate-400 pointer-events-none"
-            />
-            <input
-              type="text"
-              placeholder="Search anything..."
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all duration-200"
-            />
-          </div>
-
-          {/* Notification Bell */}
-          <button
-            onClick={handleNotifications}
-            className="relative w-9 h-9 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:text-primary-700 hover:border-primary-200 hover:bg-primary-50 transition-all duration-200 shadow-sm"
-            aria-label="Notifications"
-          >
-            <Bell size={16} />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-700 rounded-full flex items-center justify-center">
-              4
-            </span>
-          </button>
-
-          {/* Settings */}
-          <button
-            onClick={handleSettings}
-            className="w-9 h-9 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:text-primary-700 hover:border-primary-200 hover:bg-primary-50 transition-all duration-200 shadow-sm"
-            aria-label="Settings"
-          >
-            <Settings size={16} />
-          </button>
-
-          {/* Admin Avatar */}
-          <div ref={profileRef} className="relative">
-            <div
-              onClick={() => setProfileOpen(prev => !prev)}
-              className="flex items-center gap-2 pl-1 cursor-pointer group"
-            >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-600 to-primary-400 flex items-center justify-center text-white text-xs font-700 ring-2 ring-primary-100">
-                SA
-              </div>
-              <div className="hidden lg:block">
-                <p className="text-sm font-700 text-slate-800 leading-tight">Super Admin</p>
-                <p className="text-[10px] text-slate-400">Administrator</p>
-              </div>
-              <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors hidden lg:block" />
-            </div>
-
-            {profileOpen && (
-              <div className="absolute right-0 mt-3 w-52 rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 ring-1 ring-slate-200">
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-3 text-sm font-700 text-slate-700 hover:bg-slate-50"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </header>
   );
